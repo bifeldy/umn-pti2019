@@ -27,7 +27,7 @@ const jwtAlgorithm = 'HS512';
 const jwtIssuer = "BiasYehez-2016";
 const jwtAudience = "MahasiswaPTI-2019";
 const jwtSecretKey = "AsLabPTI-2019";
-const jwtExpiredIn = 3 * 60; // 3 Minutes Login
+const jwtExpiredIn = 3*60; // 3 Minutes Login
 
 // Alternative To Database Is Using .CSV Excel File
 const csvFilePath = {
@@ -71,12 +71,14 @@ Object.keys(csvFilePath).forEach((key, index) => {
 });
 
 /** JavaScript Web Token Helper */
-function JwtEncode(user) {
+function JwtEncode(user, remember_me) {
+    console.log(remember_me);
     return jwt.sign({user}, jwtSecretKey, {
         algorithm: jwtAlgorithm,
         issuer: jwtIssuer,
         audience: jwtAudience,
-        expiresIn: jwtExpiredIn,
+        // Can Remember Login up To 30 Days
+        expiresIn: remember_me ? (30*24*60*60) : jwtExpiredIn,
     });
 }
 function JwtDecode(token) {
@@ -126,9 +128,15 @@ app.post('/api/login', (request, response) => {
     console.log(index);
     if (index >= 0) {
         const { password, ...user } = database.users[index];
+        let remember_me = false
+        if ('remember_me' in request.body) {
+            if (JSON.parse(request.body.remember_me) == true) {
+                remember_me = true
+            }
+        }
         response.json({
             info: 'Berhasil Login. Yeay! 🤩',
-            token: JwtEncode(user)
+            token: JwtEncode(user, remember_me)
         });
     }
     else {

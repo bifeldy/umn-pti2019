@@ -72,7 +72,6 @@ Object.keys(csvFilePath).forEach((key, index) => {
 
 /** JavaScript Web Token Helper */
 function JwtEncode(user, remember_me) {
-    console.log(remember_me);
     return jwt.sign({user}, jwtSecretKey, {
         algorithm: jwtAlgorithm,
         issuer: jwtIssuer,

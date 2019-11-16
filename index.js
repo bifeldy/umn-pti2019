@@ -227,12 +227,17 @@ app.get('/api/mahasiswa/:id', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa/${request.params.id}`);
     if ('id' in request.params) {
         const index = database.userDetail.findIndex(u => u.id == parseInt(request.params.id));
+        let mahasiswa = database.users[index];
         let mahasiswaDetail = database.userDetail[index];
-        delete mahasiswaDetail.password;
+        for (let i=0; i<mahasiswa.length; i++) {
+            delete mahasiswa.password;
+            delete mahasiswaDetail.password;
+        }
         response.json({
             info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
             result: {
-                mahasiswa: mahasiswaDetail
+                ...mahasiswa,
+                ...mahasiswaDetail
             }
         });
     }
@@ -241,13 +246,13 @@ app.get('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa`);
     let mahasiswa = database.users;
     for (let i=0; i<mahasiswa.length; i++) {
-        // delete mahasiswa[i].password;
+        delete mahasiswa[i].password;
     }
     response.json({
         info: 'Daftar Mahasiswa Univ. Multimedia Nusantara 🤔',
         result: {
             count: mahasiswa.length,
-            user: mahasiswa
+            mahasiswa: mahasiswa
         }
     });
 });

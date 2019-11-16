@@ -38,9 +38,12 @@ const csvFilePath = {
     users: './data/users.csv',
     userDetail: './data/userDetail.csv',
     ukm: './data/ukm.csv',
+    ukmDetail: './data/ukmDetail.csv',
     kantin: './data/kantin.csv',
     perpustakaan: './data/perpustakaan.csv',
+    perpustakaanDetail: './data/perpustakaanDetail.csv',
     fasilitas: './data/fasilitas.csv',
+    fasilitasDetail: './data/fasilitasDetail.csv',
 };
 
 /** Our Local Database */
@@ -48,9 +51,12 @@ let database = {
     users: [],
     userDetail: [],
     ukm: [],
+    ukmDetail: [],
     kantin: [],
     perpustakaan: [],
-    fasilitas: []
+    perpustakaanDetail: [],
+    fasilitas: [],
+    fasilitasDetail: []
 };
 
 /** Saving Database By Writing CSV */
@@ -80,8 +86,8 @@ function JwtEncode(user, remember_me) {
         algorithm: jwtAlgorithm,
         issuer: jwtIssuer,
         audience: jwtAudience,
-        // Can Remember Login up To 30 Days
-        expiresIn: remember_me ? (30*24*60*60) : jwtExpiredIn,
+        // Can Remember Login up To 1 Days
+        expiresIn: remember_me ? (24*60*60) : jwtExpiredIn,
     });
 }
 function JwtDecode(token) {
@@ -326,7 +332,7 @@ app.get('/api/mahasiswa/:id', (request, response) => {
         const parameter = request.params.id.replace(/[^0-9]+/g, '');
         if (parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/mahasiswa/${parameter}`);
-            const index = database.userDetail.findIndex(u => u.id == parseInt(parameter));
+            const index = database.users.findIndex(u => u.id == parseInt(parameter));
             if (index >= 0) {
                 let mahasiswa = database.users[index];
                 const mahasiswaDetail = database.userDetail[index];
@@ -424,13 +430,84 @@ app.post('/api/update', (request, response) => {
 });
 
 /** UKM -- Unit Kegiatan Mahasiswa */
+app.get('/api/ukm/:kode', (request, response) => {
+    if ('kode' in request.params) {
+        const parameter = request.params.kode.replace(/[^0-9a-zA-Z]+/g, '');
+        if (parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/ukm/${parameter}`);
+            const index = database.ukm.findIndex(u => u.kode == parameter);
+            if (index >= 0) {
+                response.json({
+                    info: 'Ekstrakurikuler Mahasiswa Univ. Multimedia Nusantara 🤔',
+                    result: {
+                        ...database.ukm[index],
+                        ...database.ukmDetail[index]
+                    }
+                });
+                return;
+            }
+        }
+        response.json({
+            info: 'Ekstrakurikuler Mahasiswa Univ. Multimedia Nusantara 🤔',
+            message: 'Ekstrakurikuler Mahasiswa Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
+        });
+    }
+});
 app.get('/api/ukm', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/ukm`);
+    const ukm = database.ukm;
+    const sortBy = request.query['sort'];
+    const orderBy = request.query['order'];
+    try {
+        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        else if (
+            sortBy == 'id' || sortBy == 'anggota' ||
+            sortBy == 'created_at' || sortBy == 'updated_at'
+        ) {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if (orderBy == 'asc') ukm.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if (orderBy == 'desc') ukm.sort((a, b) => b[sortBy] - a[sortBy]);
+            else throw 'defaultSortNumberAsc';
+        }
+        else {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if (orderBy == 'asc') {
+                ukm.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else if (orderBy == 'desc') {
+                ukm.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else throw 'defaultSortWordAsc';
+        }
+    }
+    catch (err) {
+        if (err == 'defaultSortNumberAsc') ukm.sort((a, b) => a.id - b.id);
+        if (err == 'defaultSortWordAsc') {
+            try {
+                ukm.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            catch (e) {
+                ukm.sort((a, b) => a.id - b.id);
+            }
+        }
+    }
     response.json({
         info: 'Daftar Unit Kegiatan Mahasiswa Yang Ada Di Univ. Multimedia Nusantara 😏',
         result: {
-            count: database.ukm.length,
-            ukm: database.ukm
+            count: ukm.length,
+            ukm
         }
     });
 });
@@ -443,46 +520,91 @@ app.post('/api/ukm', (request, response) => {
     }
     catch(error) {
         response.json({
-            info: 'Gagal Menambah Data! 🤧 Akses Ditolak! 😷',
-            result: error
-        });
-    }
-});
-
-/** Kantin -- Barang Dagangan */
-app.get('/api/kantin', (request, response) => {
-    console.log(`${request.connection.remoteAddress} => /api/kantin`);
-    response.json({
-        info: 'Daftar Menu Makanan & Minuman Kantin Univ. Multimedia Nusantara 😲',
-        result: {
-            count: database.kantin.length,
-            kantin: database.kantin
-        }
-    });
-});
-app.post('/api/kantin', (request, response) => {
-    console.log(`${request.connection.remoteAddress} => /api/kantin => ${JSON.stringify(request.body)}`);
-    try { 
-        const decoded = jwt.verify(request.body.token, jwtSecretKey);
-        const index = database.users.findIndex(u => u.id == decoded.user.id);
-        //TODO:
-    }
-    catch(error) {
-        response.json({
-            info: 'Gagal Menambah Data! 🤧 Akses Ditolak! 😷',
+            info: 'Gagal Menambah Ekstrakurikuler Mahasiswa! 🤧 Akses Ditolak! 😷',
             result: error
         });
     }
 });
 
 /** Perpustakaan -- Buku, Jurnal & Skripsi */
+app.get('/api/perpustakaan/:isbn', (request, response) => {
+    if ('isbn' in request.params) {
+        const parameter = request.params.isbn.replace(/[^0-9]+/g, '');
+        if (parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/perpustakaan/${parameter}`);
+            const index = database.perpustakaan.findIndex(u => u.isbn == parseInt(parameter));
+            if (index >= 0) {
+                response.json({
+                    info: 'Pustaka Univ. Multimedia Nusantara 🤔',
+                    result: {
+                        ...database.perpustakaan[index],
+                        ...database.perpustakaanDetail[index]
+                    }
+                });
+                return;
+            }
+        }
+        response.json({
+            info: 'Pustaka Univ. Multimedia Nusantara 🤔',
+            message: 'Pustaka Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
+        });
+    }
+});
 app.get('/api/perpustakaan', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/perpustakaan`);
+    const perpustakaan = database.perpustakaan;
+    const sortBy = request.query['sort'];
+    const orderBy = request.query['order'];
+    try {
+        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        else if (
+            sortBy == 'id' || sortBy == 'isbn' ||
+            sortBy == 'created_at' || sortBy == 'updated_at'
+        ) {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if (orderBy == 'asc') perpustakaan.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if (orderBy == 'desc') perpustakaan.sort((a, b) => b[sortBy] - a[sortBy]);
+            else throw 'defaultSortNumberAsc';
+        }
+        else {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if (orderBy == 'asc') {
+                perpustakaan.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else if (orderBy == 'desc') {
+                perpustakaan.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else throw 'defaultSortWordAsc';
+        }
+    }
+    catch (err) {
+        if (err == 'defaultSortNumberAsc') perpustakaan.sort((a, b) => a.id - b.id);
+        if (err == 'defaultSortWordAsc') {
+            try {
+                perpustakaan.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            catch (e) {
+                perpustakaan.sort((a, b) => a.id - b.id);
+            }
+        }
+    }
     response.json({
         info: 'Daftar Buku, Jurnal & Skripsi (Bisa Minjam >= 3 Buku => Anda Tua!) 🤣',
         result: {
-            count: database.perpustakaan.length,
-            perpustakaan: database.perpustakaan
+            count: perpustakaan.length,
+            perpustakaan
         }
     });
 });
@@ -495,20 +617,91 @@ app.post('/api/perpustakaan', (request, response) => {
     }
     catch(error) {
         response.json({
-            info: 'Gagal Menambah Data! 🤧 Akses Ditolak! 😷',
+            info: 'Gagal Menambah Pustaka! 🤧 Akses Ditolak! 😷',
             result: error
         });
     }
 });
 
 /** Fasilitas -- Ruangan & Barang Perlengkapan */
+app.get('/api/fasilitas/:kode', (request, response) => {
+    if ('kode' in request.params) {
+        const parameter = request.params.kode.replace(/[^0-9a-zA-Z]+/g, '');
+        if (parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/fasilitas/${parameter}`);
+            const index = database.fasilitas.findIndex(f => f.kode == parameter);
+            if (index >= 0) {
+                response.json({
+                    info: 'Fasilitas Univ. Multimedia Nusantara 🤔',
+                    result: {
+                        ...database.fasilitas[index],
+                        ...database.fasilitasDetail[index]
+                    }
+                });
+                return;
+            }
+        }
+        response.json({
+            info: 'Fasilitas Univ. Multimedia Nusantara 🤔',
+            message: 'Fasilitas Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
+        });
+    }
+});
 app.get('/api/fasilitas', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/fasilitas`);
+    const fasilitas = database.fasilitas;
+    const sortBy = request.query['sort'];
+    const orderBy = request.query['order'];
+    try {
+        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        else if (
+            sortBy == 'id' ||
+            sortBy == 'created_at' || sortBy == 'updated_at'
+        ) {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if (orderBy == 'asc') fasilitas.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if (orderBy == 'desc') fasilitas.sort((a, b) => b[sortBy] - a[sortBy]);
+            else throw 'defaultSortNumberAsc';
+        }
+        else {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if (orderBy == 'asc') {
+                fasilitas.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else if (orderBy == 'desc') {
+                fasilitas.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else throw 'defaultSortWordAsc';
+        }
+    }
+    catch (err) {
+        if (err == 'defaultSortNumberAsc') fasilitas.sort((a, b) => a.id - b.id);
+        if (err == 'defaultSortWordAsc') {
+            try {
+                fasilitas.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            catch (e) {
+                fasilitas.sort((a, b) => a.id - b.id);
+            }
+        }
+    }
     response.json({
         info: 'Daftar Fasilitas Yang Biasanya Bisa Dipinjam Untuk Keperluan Mahasiswa 🤪',
         result: {
-            count: database.fasilitas.length,
-            fasilitas: database.fasilitas
+            count: fasilitas.length,
+            fasilitas
         }
     });
 });
@@ -521,7 +714,104 @@ app.post('/api/fasilitas', (request, response) => {
     }
     catch(error) {
         response.json({
-            info: 'Gagal Menambah Data! 🤧 Akses Ditolak! 😷',
+            info: 'Gagal Menambah Fasilitas! 🤧 Akses Ditolak! 😷',
+            result: error
+        });
+    }
+});
+
+/** Kantin -- Barang Dagangan */
+app.get('/api/kantin/:kode', (request, response) => {
+    if ('kode' in request.params) {
+        const parameter = request.params.kode.replace(/[^0-9a-zA-Z]+/g, '');
+        if (parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/kantin/${parameter}`);
+            const index = database.kantin.findIndex(k => k.kode == parameter);
+            if (index >= 0) {
+                response.json({
+                    info: 'Jajanan Univ. Multimedia Nusantara 🤔',
+                    result: {
+                        ...database.kantin[index],
+                        ...database.kantinDetail[index]
+                    }
+                });
+                return;
+            }
+        }
+        response.json({
+            info: 'Jajanan Univ. Multimedia Nusantara 🤔',
+            message: 'Jajanan Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
+        });
+    }
+});
+app.get('/api/kantin', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /api/kantin`);
+    const kantin = database.kantin;
+    const sortBy = request.query['sort'];
+    const orderBy = request.query['order'];
+    try {
+        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        else if (
+            sortBy == 'id' ||
+            sortBy == 'created_at' || sortBy == 'updated_at'
+        ) {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if (orderBy == 'asc') kantin.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if (orderBy == 'desc') kantin.sort((a, b) => b[sortBy] - a[sortBy]);
+            else throw 'defaultSortNumberAsc';
+        }
+        else {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if (orderBy == 'asc') {
+                kantin.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else if (orderBy == 'desc') {
+                kantin.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else throw 'defaultSortWordAsc';
+        }
+    }
+    catch (err) {
+        if (err == 'defaultSortNumberAsc') kantin.sort((a, b) => a.id - b.id);
+        if (err == 'defaultSortWordAsc') {
+            try {
+                kantin.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            catch (e) {
+                kantin.sort((a, b) => a.id - b.id);
+            }
+        }
+    }
+    response.json({
+        info: 'Daftar Jajanan Kantin Univ. Multimedia Nusantara 😲',
+        result: {
+            count: kantin.length,
+            kantin
+        }
+    });
+});
+app.post('/api/kantin', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /api/kantin => ${JSON.stringify(request.body)}`);
+    try { 
+        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        const index = database.users.findIndex(u => u.id == decoded.user.id);
+        //TODO:
+    }
+    catch(error) {
+        response.json({
+            info: 'Gagal Menambah Jajanan! 🤧 Akses Ditolak! 😷',
             result: error
         });
     }

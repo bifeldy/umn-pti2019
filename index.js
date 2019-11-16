@@ -359,11 +359,58 @@ app.get('/api/mahasiswa', (request, response) => {
     for (let i=0; i<mahasiswa.length; i++) {
         delete mahasiswa[i].password;
     }
+    const sortBy = request.query['sort'];
+    const orderBy = request.query['order'];
+    try {
+        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        else if (
+            sortBy == 'id' || sortBy == 'anggota' ||
+            sortBy == 'created_at' || sortBy == 'updated_at'
+        ) {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if (orderBy == 'asc') mahasiswa.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if (orderBy == 'desc') mahasiswa.sort((a, b) => b[sortBy] - a[sortBy]);
+            else throw 'defaultSortNumberAsc';
+        }
+        else {
+            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if (orderBy == 'asc') {
+                mahasiswa.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else if (orderBy == 'desc') {
+                mahasiswa.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            else throw 'defaultSortWordAsc';
+        }
+    }
+    catch (err) {
+        if (err == 'defaultSortNumberAsc') mahasiswa.sort((a, b) => a.id - b.id);
+        if (err == 'defaultSortWordAsc') {
+            try {
+                mahasiswa.sort((a, b) => {
+                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    return 0;
+                });
+            }
+            catch (e) {
+                mahasiswa.sort((a, b) => a.id - b.id);
+            }
+        }
+    }
     response.json({
         info: 'Daftar Mahasiswa Univ. Multimedia Nusantara 🤔',
         result: {
             count: mahasiswa.length,
-            mahasiswa: mahasiswa
+            mahasiswa
         }
     });
 });

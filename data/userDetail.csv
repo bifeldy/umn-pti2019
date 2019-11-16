@@ -1,2 +1,21 @@
-id,foto,tanggal_lahir,alamat,created_at,updated_at
-1,https://i.pximg.net/img-original/img/2019/11/07/03/56/06/77690982_p0.png,1998-06-14 12:34,"Sleman, Yogyakarta",1573751507000,1573764954857
+﻿id,foto,prodi,tanggal_lahir,angkatan,created_at,updated_at
+1,https://i.pximg.net/img-original/img/2019/11/07/03/56/06/77690982_p0.png,Informatika,1998-06-14,2016,1573751507000,1573764954857
+2,https://cdn6.dissolve.com/p/D430_50_100/D430_50_100_1200.jpg,Informatika,1999-07-21,2017,1573897483877,1573897483877
+3,https://vignette.wikia.nocookie.net/btb/images/6/68/BobSavestheHedgehogs105.png/revision/latest?cb=20190806061908,DKV,2000-03-16,2018,1573897494983,1573897494983
+4,https://i.ytimg.com/vi/OZy1PMkkIz0/maxresdefault.jpg,Teknik Komputer,2000-04-12,2018,1573897499918,1573897499918
+5,https://cdn.discordapp.com/attachments/287946882444165130/353144379453603840/saunts.png,Informatika,1998-11-03,2017,1573897502387,1573897502387
+6,https://upload.wikimedia.org/wikipedia/commons/8/88/Samuel_Kim_in_Sixteen_Showcase_interview_01.png,Sistem Informasi,2000-01-01,2018,1573897506089,1573897506089
+7,https://vignette.wikia.nocookie.net/ib-instant-bullet/images/e/e6/Witch.png/revision/latest?cb=20151126062242,Teknik Fisika,2000-08-09,2018,1573897511025,1573897511025
+8,https://du7ybees82p4m.cloudfront.net/591ecb7d2b23b3.68452042.jpg?width=910&height=512,Arsitektur,1999-11-11,2017,1573897515961,1573897515961
+9,https://upload.wikimedia.org/wikimedia/id/2/28/Binus_UNIV.PNG,Informatika,1998-03-23,2017,1573897519663,1573897519663
+10,https://pbs.twimg.com/profile_images/471636371845558272/yauUplFv_400x400.jpeg,Perhotelan,2006-07-02,2018,1573897523365,1573897523365
+11,https://as1.ftcdn.net/jpg/00/77/71/12/500_F_77711294_BA5QTjtgGPmLKCXGdtbAgZciL4kEwCnx.jpg,Akuntansi,1999-10-10,2018,1573897525833,1573897525833
+12,https://st.focusedcollection.com/14916868/i/1800/focused_178114872-stock-photo-portrait-young-male-university-student.jpg,Perhotelan,1999-05-15,2018,1573897529534,1573897529534
+13,https://img3.stockfresh.com/files/m/monkey_business/m/67/94504_stock-photo-university-student-reading-in-library.jpg,Sistem Informasi,1997-02-23,2016,1573897533236,1573897533236
+14,https://cdn.discordapp.com/attachments/645138912737755147/645139230472798238/leftout.png,Informatika,1997-06-14,2016,1573897535706,1573897535706
+15,https://cdn.discordapp.com/attachments/645138912737755147/645139516142780416/kyarusmart.png,Sistem Informasi,1998-12-10,2017,1573897538173,1573897538173
+16,https://cdn.discordapp.com/attachments/645138912737755147/645139912055717909/thonking.jpg,Teknik Elektro,1999-11-11,2018,1573897540641,1573897540641
+17,https://st2.depositphotos.com/1005893/7789/i/950/depositphotos_77897604-stock-photo-adult-indian-university-student.jpg,Film dan Animasi,1998-05-05,2017,1573897543108,1573897543108
+18,https://cdn.idntimes.com/content-images/duniaku/post/20191106/binomo-2ace14bf6e31879cfbff426a0343613e_600x400.jpg,DKV,2000-05-01,2019,1573897545577,1573897545577
+19,https://previews.123rf.com/images/olegdudko/olegdudko1507/olegdudko150708112/42302896-university-student-college-student-.jpg,Informatika,1997-12-12,2017,1573897548045,1573897548045
+20,http://www.anime-expo.org/wp-content/uploads/2019/05/cygames_kimura.png,Manajemen,2000-04-04,2019,1573897550513,1573897550513

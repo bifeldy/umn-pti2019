@@ -135,7 +135,7 @@ app.post('/api/login', (request, response) => {
         }
         response.json({
             info: 'Berhasil Login. Yeay! 🤩',
-            token: JwtEncode(user, remember_me)
+            token: JwtEncode({ ...user, ...database.userDetail[index] }, remember_me)
         });
     }
     else {
@@ -166,52 +166,70 @@ app.post('/api/register', (request, response) => {
         'password' in newUserData &&
         'telepon' in newUserData &&
         'tanggal_lahir' in newUserData &&
-        'alamat' in newUserData
+        'alamat' in newUserData &&
+        'angkatan' in newUserData &&
+        'prodi' in newUserData
     ) {
-        const index = database.users.findIndex(u =>
-            u.nim == request.body.nim || u.email == request.body.email || u.phone_number == request.body.phone_number
-        );
+        const iNim = database.users.findIndex(u => u.nim == newUserData.nim);
+        const iEmail = database.users.findIndex(u => u.email == newUserData.email);
+        const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
+        const index = Math.max(iNim, iEmail, iPhone);
         if (index >= 0) {
+            let result = {};
+            if (iNim >= 0) result.nim = 'NIM Sudah Terpakai! 😭';
+            if (iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
+            if (iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
             response.json({
                 info: 'Gagal Mendaftarkan User Baru! T_T 😪',
-                message: 'Nim/Email/Telepon Sudah Terpakai! 😭'
+                result
             });
         }
         else {
-            const currentTime = new Date().getTime();
-            newUserData.id = database.users.length + 1;
-            newUserData.nim = newUserData.nim.padStart(12, '0');
-            newUserData.role = 'Mahasiswa';
-            if (!('password' in newUserData)) newUserData.foto = 'https://via.placeholder.com/966x935';
-            newUserData.created_at = currentTime;
-            newUserData.updated_at = currentTime;
-            newUser = {
-                id: newUserData.id,
-                nim: newUserData.nim,
-                email: newUserData.email,
-                nama_lengkap: newUserData.nama_lengkap,
-                password: newUserData.password,
-                telepon: newUserData.telepon,
-                role: newUserData.role,
-                created_at: newUserData.created_at,
-                updated_at: newUserData.updated_at
+            if (newUserData.password.length >= 128) {
+                const currentTime = new Date().getTime();
+                newUserData.id = database.users.length + 1;
+                newUserData.nim = newUserData.nim.padStart(12, '0');
+                if (!('foto' in newUserData)) newUserData.foto = 'https://via.placeholder.com/966x935';
+                newUserData.created_at = currentTime;
+                newUserData.updated_at = currentTime;
+                newUser = {
+                    id: newUserData.id,
+                    nim: newUserData.nim,
+                    email: newUserData.email,
+                    nama_lengkap: newUserData.nama_lengkap,
+                    password: newUserData.password,
+                    telepon: newUserData.telepon,
+                    role: newUserData.role,
+                    created_at: newUserData.created_at,
+                    updated_at: newUserData.updated_at
+                }
+                database.users.push(newUser);
+                SaveDatabase('users');
+                newUserDetail = {
+                    id: newUserData.id,
+                    foto: newUserData.foto,
+                    tanggal_lahir: newUserData.tanggal_lahir,
+                    alamat: newUserData.alamat,
+                    prodi: newUserData.prodi,
+                    angkatan: newUserData.angkatan,
+                    created_at: newUserData.created_at,
+                    updated_at: newUserData.updated_at
+                }
+                database.userDetail.push(newUserDetail);
+                SaveDatabase('userDetail');
+                const newUserWithoutPassword = newUser;
+                delete newUserWithoutPassword.password;
+                response.json({
+                    info: 'Berhasil Mendaftarkan User Baru! ^_^.~ 😁',
+                    token: JwtEncode(newUserWithoutPassword)
+                });
             }
-            database.users.push(newUser);
-            SaveDatabase('users');
-            newUserDetail = {
-                id: newUserData.id,
-                foto: newUserData.foto,
-                tanggal_lahir: newUserData.tanggal_lahir,
-                alamat: newUserData.alamat,
-                created_at: newUserData.created_at,
-                updated_at: newUserData.updated_at
+            else {
+                response.json({
+                    info: 'Gagal Mendaftarkan User Baru! T_T 😪',
+                    message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
+                });
             }
-            database.userDetail.push(newUserDetail);
-            SaveDatabase('userDetail');
-            response.json({
-                info: 'Berhasil Mendaftarkan User Baru! ^_^.~ 😁',
-                token: JwtEncode(newUser)
-            });
         }
     }
     else {
@@ -230,7 +248,7 @@ app.get('/api/mahasiswa/:id', (request, response) => {
         let mahasiswa = database.users[index];
         const mahasiswaDetail = database.userDetail[index];
         for (let i=0; i<mahasiswa.length; i++) {
-            //TODO: delete mahasiswa.password;
+            delete mahasiswa.password;
         }
         response.json({
             info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
@@ -245,7 +263,7 @@ app.get('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa`);
     let mahasiswa = database.users;
     for (let i=0; i<mahasiswa.length; i++) {
-        //TODO: delete mahasiswa[i].password;
+        delete mahasiswa[i].password;
     }
     response.json({
         info: 'Daftar Mahasiswa Univ. Multimedia Nusantara 🤔',
@@ -276,11 +294,22 @@ app.post('/api/update', (request, response) => {
         }
         else {
             const currentTime = new Date().getTime();
-            if ( 'foto' in request.body ) database.userDetail[index].foto = request.body.foto;
-            if ( 'nama_lengkap' in request.body ) database.users[index].nama_lengkap = request.body.nama_lengkap;
-            if ( 'password' in request.body ) database.users[index].password = request.body.password;
-            if ( 'tanggal_lahir' in request.body ) database.userDetail[index].tanggal_lahir = request.body.tanggal_lahir;
-            if ( 'alamat' in request.body ) database.userDetail[index].alamat = request.body.alamat;
+            if ('password' in request.body) {
+                if (newUserData.password.length >= 128) {
+                    database.users[index].password = request.body.password;
+                }
+                else {
+                    response.json({
+                        info: 'Gagal Memperbaharui Data Profil! 🤧',
+                        message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
+                    });
+                    return;
+                }
+            }
+            if ('foto' in request.body) database.userDetail[index].foto = request.body.foto;
+            if ('nama_lengkap' in request.body) database.users[index].nama_lengkap = request.body.nama_lengkap;
+            if ('tanggal_lahir' in request.body) database.userDetail[index].tanggal_lahir = request.body.tanggal_lahir;
+            if ('alamat' in request.body) database.userDetail[index].alamat = request.body.alamat;
             database.users[index].updated_at = currentTime;
             database.userDetail[index].updated_at = currentTime;
             SaveDatabase('users');

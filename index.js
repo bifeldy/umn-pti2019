@@ -4,11 +4,14 @@ const appDescription = 'Delay Itu Bebas, Drop Itu Pilihan! 😉';
 const appVersion = 'v1.0-BetA Release! 😱';
 const appDev = ['Basilius Bias Astho Christyono 😈', 'Yehezkiel Gunawan 👿'];
 const appDocumentation = 'https://documenter.getpostman.com/view/5658787/SW7W5pjd';
+const appRepository = 'https://api.github.com/repos/Bifeldy/umn-pti2019';
+const appRepositoryCommits = `${appRepository}/commits`;
 
 /** Our Library */
 const express = require('express');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
+const externalRequest = require('request');
 const readCsv = require('csvtojson');
 const writeCsv = require('write-csv');
 
@@ -88,21 +91,78 @@ function JwtDecode(token) {
 /** Home Page */
 app.get('/', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /`);
-    response.json({
-        message: `Selamat Datang Di ${appName}! 😍`,
-        description: appDescription,
-        version: appVersion,
-        developers: appDev
+    externalRequest({
+        url: appRepository,
+        headers: {
+            'User-Agent': 'request'
+        }
+    },
+    (err, res, body) => {
+        let githubResponse = {};
+        if (!err && res.statusCode == 200) {
+            const ghRes = JSON.parse(body);
+            githubResponse = {
+                id: ghRes.id,
+                node_id:  ghRes.node_id,
+                name:  ghRes.name,
+                html_url: ghRes.html_url,
+                owner: {
+                    login: ghRes.owner.login,
+                    id: ghRes.owner.id,
+                    node_id: ghRes.owner.node_id,
+                    avatar_url: ghRes.owner.avatar_url,
+                    html_url: ghRes.owner.html_url,
+                },
+                license: {
+                    key: ghRes.license.key,
+                    name: ghRes.license.name,
+                    spdx_id: ghRes.license.spdx_id,
+                    url: ghRes.license.url,
+                    node_id: ghRes.license.node_id
+                },
+                size: ghRes.size,
+                open_issues_count: ghRes.open_issues_count,
+                stargazers_count: ghRes.stargazers_count,
+                watchers_count: ghRes.watchers_count,
+                default_branch: ghRes.default_branch,
+                language: ghRes.language,
+                created_at: ghRes.created_at,
+                updated_at: ghRes.updated_at,
+                pushed_at: ghRes.pushed_at,
+            };
+        }
+        response.json({
+            message: `Selamat Datang Di ${appName}! 😍`,
+            description: appDescription,
+            version: appVersion,
+            developers: appDev,
+            github: githubResponse
+        });
     });
 });
 
 /** API Page */
 app.get('/api', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api`);
-    response.json({
-        info: 'Halaman Tembak-Tembak-an API PTI 2019 Ganjil! 😙',
-        version: appVersion,
-        developers: appDev
+    externalRequest({
+        url: appRepositoryCommits,
+        headers: {
+            'User-Agent': 'request'
+        }
+    },
+    (err, res, body) => {
+        let githubCommitsResponse = [];
+        if (!err && res.statusCode == 200) {
+            githubCommitsResponse = JSON.parse(body);
+            delete githubCommitsResponse[0].author;
+            delete githubCommitsResponse[0].committer;
+        }
+        response.json({
+            info: 'Halaman Tembak-Tembak-an API PTI 2019 Ganjil! 😙',
+            version: appVersion,
+            developers: appDev,
+            commit: githubCommitsResponse[0]
+        });
     });
 });
 

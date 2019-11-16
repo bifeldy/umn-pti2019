@@ -364,7 +364,7 @@ app.get('/api/mahasiswa', (request, response) => {
 app.post('/api/update', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/update => ${JSON.stringify(request.body)}`);
     try { 
-        const decoded = jwt.verify(token, jwtSecretKey);
+        const decoded = jwt.verify(request.body.token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         if (
             (
@@ -436,7 +436,17 @@ app.get('/api/ukm', (request, response) => {
 });
 app.post('/api/ukm', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/ukm => ${JSON.stringify(request.body)}`);
-    //TODO:
+    try { 
+        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        const index = database.users.findIndex(u => u.id == decoded.user.id);
+        //TODO:
+    }
+    catch(error) {
+        response.json({
+            info: 'Gagal Menambah Data! 🤧 Akses Ditolak! 😷',
+            result: error
+        });
+    }
 });
 
 /** Kantin -- Barang Dagangan */
@@ -452,7 +462,17 @@ app.get('/api/kantin', (request, response) => {
 });
 app.post('/api/kantin', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/kantin => ${JSON.stringify(request.body)}`);
-    //TODO:
+    try { 
+        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        const index = database.users.findIndex(u => u.id == decoded.user.id);
+        //TODO:
+    }
+    catch(error) {
+        response.json({
+            info: 'Gagal Menambah Data! 🤧 Akses Ditolak! 😷',
+            result: error
+        });
+    }
 });
 
 /** Perpustakaan -- Buku, Jurnal & Skripsi */
@@ -468,7 +488,17 @@ app.get('/api/perpustakaan', (request, response) => {
 });
 app.post('/api/perpustakaan', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/perpustakaan => ${JSON.stringify(request.body)}`);
-    //TODO:
+    try { 
+        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        const index = database.users.findIndex(u => u.id == decoded.user.id);
+        //TODO:
+    }
+    catch(error) {
+        response.json({
+            info: 'Gagal Menambah Data! 🤧 Akses Ditolak! 😷',
+            result: error
+        });
+    }
 });
 
 /** Fasilitas -- Ruangan & Barang Perlengkapan */
@@ -484,10 +514,20 @@ app.get('/api/fasilitas', (request, response) => {
 });
 app.post('/api/fasilitas', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/fasilitas => ${JSON.stringify(request.body)}`);
-    //TODO:
+    try { 
+        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        const index = database.users.findIndex(u => u.id == decoded.user.id);
+        //TODO:
+    }
+    catch(error) {
+        response.json({
+            info: 'Gagal Menambah Data! 🤧 Akses Ditolak! 😷',
+            result: error
+        });
+    }
 });
 
-/** 404- Harus Paling Bawah */
+/** Error 404 - Harus Paling Bawah */
 app.get('*', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /notFound`);
     response.redirect(appDocumentation);

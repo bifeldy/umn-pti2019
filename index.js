@@ -6,6 +6,7 @@ const appDev = ['Basilius Bias Astho Christyono 😈', 'Yehezkiel Gunawan 👿']
 const appDocumentation = 'https://documenter.getpostman.com/view/5658787/SW7W5pjd';
 const appRepository = 'https://api.github.com/repos/Bifeldy/umn-pti2019';
 const appRepositoryCommits = `${appRepository}/commits`;
+const appRepositoryContributors = `${appRepository}/contributors`;
 
 /** Our Library */
 const express = require('express');
@@ -157,11 +158,39 @@ app.get('/api', (request, response) => {
             delete githubCommitsResponse[0].author;
             delete githubCommitsResponse[0].committer;
         }
-        response.json({
-            info: 'Halaman Tembak-Tembak-an API PTI 2019 Ganjil! 😙',
-            version: appVersion,
-            developers: appDev,
-            commit: githubCommitsResponse[0]
+        externalRequest({
+            url: appRepositoryContributors,
+            headers: {
+                'User-Agent': 'request'
+            }
+        },
+        (err, res, body) => {
+            let githubContributorsResponse = [];
+            if (!err && res.statusCode == 200) {
+                githubContributorsResponse = JSON.parse(body);
+                for (let i=0; i<githubContributorsResponse.length; i++) {
+                    delete githubContributorsResponse[i].gravatar_id;
+                    delete githubContributorsResponse[i].followers_url;
+                    delete githubContributorsResponse[i].following_url;
+                    delete githubContributorsResponse[i].gists_url;
+                    delete githubContributorsResponse[i].starred_url;
+                    delete githubContributorsResponse[i].subscriptions_url;
+                    delete githubContributorsResponse[i].organizations_url;
+                    delete githubContributorsResponse[i].repos_url;
+                    delete githubContributorsResponse[i].events_url;
+                    delete githubContributorsResponse[i].received_events_url;
+                    delete githubContributorsResponse[i].type;
+                    delete githubContributorsResponse[i].site_admin;
+                    delete githubContributorsResponse[i].contributions;
+                }
+            }
+            response.json({
+                info: 'Halaman Tembak-Tembak-an API PTI 2019 Ganjil! 😙',
+                version: appVersion,
+                documentation: appDocumentation,
+                contributors: githubContributorsResponse,
+                commit: githubCommitsResponse[0]
+            });
         });
     });
 });

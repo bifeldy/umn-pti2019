@@ -92,7 +92,7 @@ function JwtEncode(user, remember_me) {
 }
 function JwtDecode(token) {
     try { return jwt.verify(token, jwtSecretKey); }
-    catch(error) { return error; }
+    catch (error) { return error; }
 }
 
 /** Home Page */
@@ -421,7 +421,7 @@ app.post('/api/update', (request, response) => {
             });
         }
     }
-    catch(error) {
+    catch (error) {
         response.json({
             info: 'Gagal Memperbaharui Data Profil! 🤧 Akses Ditolak! 😷',
             result: error
@@ -518,7 +518,7 @@ app.post('/api/ukm', (request, response) => {
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         //TODO:
     }
-    catch(error) {
+    catch (error) {
         response.json({
             info: 'Gagal Menambah Ekstrakurikuler Mahasiswa! 🤧 Akses Ditolak! 😷',
             result: error
@@ -615,7 +615,7 @@ app.post('/api/perpustakaan', (request, response) => {
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         //TODO:
     }
-    catch(error) {
+    catch (error) {
         response.json({
             info: 'Gagal Menambah Pustaka! 🤧 Akses Ditolak! 😷',
             result: error
@@ -712,7 +712,7 @@ app.post('/api/fasilitas', (request, response) => {
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         //TODO:
     }
-    catch(error) {
+    catch (error) {
         response.json({
             info: 'Gagal Menambah Fasilitas! 🤧 Akses Ditolak! 😷',
             result: error
@@ -809,7 +809,7 @@ app.post('/api/kantin', (request, response) => {
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         //TODO:
     }
-    catch(error) {
+    catch (error) {
         response.json({
             info: 'Gagal Menambah Jajanan! 🤧 Akses Ditolak! 😷',
             result: error

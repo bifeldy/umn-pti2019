@@ -228,10 +228,9 @@ app.get('/api/mahasiswa/:id', (request, response) => {
     if ('id' in request.params) {
         const index = database.userDetail.findIndex(u => u.id == parseInt(request.params.id));
         let mahasiswa = database.users[index];
-        let mahasiswaDetail = database.userDetail[index];
+        const mahasiswaDetail = database.userDetail[index];
         for (let i=0; i<mahasiswa.length; i++) {
-            delete mahasiswa.password;
-            delete mahasiswaDetail.password;
+            //TODO: delete mahasiswa.password;
         }
         response.json({
             info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
@@ -246,7 +245,7 @@ app.get('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa`);
     let mahasiswa = database.users;
     for (let i=0; i<mahasiswa.length; i++) {
-        delete mahasiswa[i].password;
+        //TODO: delete mahasiswa[i].password;
     }
     response.json({
         info: 'Daftar Mahasiswa Univ. Multimedia Nusantara 🤔',
@@ -312,7 +311,7 @@ app.get('/api/ukm', (request, response) => {
 });
 app.post('/api/ukm', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/ukm => ${JSON.stringify(request.body)}`);
-    // TODO:
+    //TODO:
 });
 
 /** Kantin -- Barang Dagangan */
@@ -328,7 +327,7 @@ app.get('/api/kantin', (request, response) => {
 });
 app.post('/api/kantin', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/kantin => ${JSON.stringify(request.body)}`);
-    // TODO:
+    //TODO:
 });
 
 /** Perpustakaan -- Buku, Jurnal & Skripsi */
@@ -344,7 +343,7 @@ app.get('/api/perpustakaan', (request, response) => {
 });
 app.post('/api/perpustakaan', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/perpustakaan => ${JSON.stringify(request.body)}`);
-    // TODO:
+    //TODO:
 });
 
 /** Fasilitas -- Ruangan & Barang Perlengkapan */
@@ -360,7 +359,7 @@ app.get('/api/fasilitas', (request, response) => {
 });
 app.post('/api/fasilitas', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/fasilitas => ${JSON.stringify(request.body)}`);
-    // TODO:
+    //TODO:
 });
 
 /** 404- Harus Paling Bawah */

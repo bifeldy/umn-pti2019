@@ -871,5 +871,6 @@ app.get('*', (request, response) => {
     response.redirect(appDocumentation);
 });
 
+// Host Server On Current Network
 app.listen(port, host, () => console.log(`Server Running ${host}:${port} 🤐`));
 module.exports = app;

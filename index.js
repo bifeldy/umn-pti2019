@@ -11,6 +11,7 @@ const appRepositoryContributors = `${appRepository}/contributors`;
 /** Our Library */
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const externalRequest = require('request');
 const readCsv = require('csvtojson');
@@ -24,7 +25,7 @@ const port = process.env.PORT || 80 || 8000 || 8080;
 /** Our App Server */
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.listen(port, host, () => console.log(`Server Running ${host}:${port} 🤐`));
+app.use(cors());
 
 /** Our Global Variables Data */
 const jwtAlgorithm = 'HS512';
@@ -869,3 +870,6 @@ app.get('*', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /notFound`);
     response.redirect(appDocumentation);
 });
+
+app.listen(port, host, () => console.log(`Server Running ${host}:${port} 🤐`));
+module.exports = app;

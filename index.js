@@ -7,6 +7,7 @@ const appDocumentation = 'https://documenter.getpostman.com/view/5658787/SW7W5pj
 const appRepository = 'https://api.github.com/repos/Bifeldy/umn-pti2019';
 const appRepositoryCommits = `${appRepository}/commits`;
 const appRepositoryContributors = `${appRepository}/contributors`;
+const appGoogleSheetId = '1G-VvfqwaObT-DfkiYA-_CTa7DapPpr7XFG2rGGb1HVY';
 
 /** Our Library */
 const express = require('express');
@@ -14,12 +15,33 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const externalRequest = require('request');
-const readCsv = require('csvtojson');
-const writeCsv = require('write-csv');
+
+/** Google Sheet API */
+const { google } = require('googleapis');
+const googleApiKey = require('./umn-pti2019-apiKey.json');
+const googleClient = new google.auth.JWT(
+    googleApiKey.client_email,
+    null,
+    googleApiKey.private_key,
+    ['https://www.googleapis.com/auth/spreadsheets']
+);
+googleClient.authorize((err, result) => {
+    if (err) {
+        console.log(err);
+        return;
+    }
+    console.log(`Connected to Google Docs SpreadSheet!`);
+    console.log(`Client :: ${googleClient.email}`);
+    console.log(`Token Expiry Date :: ${new Date(result.expiry_date)}`);
+});
+const gsApi = google.sheets({
+    version: "v4",
+    auth: googleClient
+});
 
 /** Our Server Settings */
 const app = express();
-const host = '0.0.0.0'; // Host On Current IP
+const host = '0.0.0.0'; // Host On Current IP (Local & Public)
 const port = process.env.PORT || 80 || 8000 || 8080;
 
 /** Our App Server */
@@ -34,52 +56,102 @@ const jwtAudience = "MahasiswaPTI-2019";
 const jwtSecretKey = "AsLabPTI-2019";
 const jwtExpiredIn = 3*60; // 3 Minutes Login
 
-// Alternative To Database Is Using .CSV Excel File
-const csvFilePath = {
-    users: './data/users.csv',
-    userDetail: './data/userDetail.csv',
-    ukm: './data/ukm.csv',
-    ukmDetail: './data/ukmDetail.csv',
-    kantin: './data/kantin.csv',
-    perpustakaan: './data/perpustakaan.csv',
-    perpustakaanDetail: './data/perpustakaanDetail.csv',
-    fasilitas: './data/fasilitas.csv',
-    fasilitasDetail: './data/fasilitasDetail.csv',
-};
+// Google Sheet Worksheet Tab Name
+const googleDocsWorksheet = [
+    'fasilitas',
+    'fasilitasDetail',
+    'kantin',
+    'kantinDetail',
+    'perpustakaan',
+    'perpustakaanDetail',
+    'ukm',
+    'ukmDetail',
+    'mahasiswa',
+    'mahasiswaDetail',
+    'users'
+];
 
 /** Our Local Database */
 let database = {
-    users: [],
-    userDetail: [],
-    ukm: [],
-    ukmDetail: [],
+    fasilitas: [],
+    fasilitasDetail: [],
     kantin: [],
+    kantinDetail: [],
     perpustakaan: [],
     perpustakaanDetail: [],
-    fasilitas: [],
-    fasilitasDetail: []
+    ukm: [],
+    ukmDetail: [],
+    mahasiswa: [],
+    mahasiswaDetail: [],
+    users: []
 };
 
-/** Saving Database By Writing CSV */
-// https://www.npmjs.com/package/write-csv
-// https://github.com/dsernst/write-csv
-function SaveDatabase(dataKey) {
-    writeCsv(csvFilePath[dataKey], database[dataKey]);
+/** Loading Database By Reading To GoogleSheet */
+function LoadGoogleSheetData(workSheetTabName) {
+    return gsApi.spreadsheets.values.get({
+        spreadsheetId: appGoogleSheetId,
+        range: workSheetTabName
+    }).then(data => {
+        const tempArr = [];
+        const tempKey = data.data.values[0];
+        const tempData = data.data.values;
+        tempData.shift();
+        tempData.map(item => {
+            const tempObj = {};
+            item.forEach((_, index) => {
+                tempObj[tempKey[index]] = item[index];
+            });
+            tempArr.push(tempObj);
+        });
+        database[workSheetTabName] = tempArr;
+        return tempKey;
+    }).catch(err => console.log(err));
 }
-function SaveAllDatabase() {
-    Object.keys(csvFilePath).forEach((key, index) => {
-        writeCsv(csvFilePath[key], database[key]);
+async function RefreshGoogleSheetData() {
+    googleDocsWorksheet.forEach(workSheet => {
+        LoadGoogleSheetData(workSheet);
     });
 }
+RefreshGoogleSheetData();
 
-/** Loading Database By Reading CSV */
-// https://www.npmjs.com/package/csvtojson
-// https://github.com/Keyang/node-csvtojson
-Object.keys(csvFilePath).forEach((key, index) => {
-    readCsv().fromFile(csvFilePath[key]).then((csvObjList) => {
-        database[key] = csvObjList;
+/** Saving Database By Writing To GoogleSheet */
+async function WriteUpdateGoogleSheetData(workSheetTab, workSheetTabDataObject) {
+    const updateUser = [];
+    const tempKey = await LoadGoogleSheetData(workSheetTab);
+    tempKey.forEach(key => {
+        updateUser.push(workSheetTabDataObject[key]);
     });
-});
+    console.log(typeof workSheetTabDataObject.id);
+    gsApi.spreadsheets.values.update({
+        spreadsheetId: appGoogleSheetId,
+        range: `${workSheetTab}!A${parseInt(workSheetTabDataObject.id)+1}`,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+            values: [updateUser]
+        }
+    }).then(res => {
+        console.log(`Update :: ${workSheetTab}`);
+        RefreshGoogleSheetData();
+    }).catch(err => console.log(err));
+}
+async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) {
+    const registerUser = [];
+    const tempKey = await LoadGoogleSheetData(workSheetTab);
+    tempKey.forEach(key => {
+        registerUser.push(workSheetTabDataObject[key]);
+    });
+    gsApi.spreadsheets.values.append({
+        spreadsheetId: appGoogleSheetId,
+        range: workSheetTab,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+            values: [registerUser]
+        }
+    }).then(res => {
+        console.log(`Write :: ${workSheetTab}`);
+        RefreshGoogleSheetData();
+    }).catch(err => console.log(err));
+}
 
 /** JavaScript Web Token Helper */
 function JwtEncode(user, remember_me) {
@@ -202,18 +274,16 @@ app.get('/api', (request, response) => {
     });
 });
 
-/** User Login With (Nim/Email/Phone) And Returned JavaScript Web Token */
+/** User Login With (Email/Phone) And Returned JavaScript Web Token */
 app.post('/api/login', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/login => ${JSON.stringify(request.body)}`);
     const index = database.users.findIndex(u =>
         (
-            u.nim == request.body.user_name ||
             u.email == request.body.user_name ||
             u.telepon == request.body.user_name
         ) && 
         u.password == request.body.password
     );
-    console.log(index);
     if (index >= 0) {
         const { password, ...user } = database.users[index];
         let remember_me = false
@@ -224,7 +294,7 @@ app.post('/api/login', (request, response) => {
         }
         response.json({
             info: 'Berhasil Login. Yeay! 🤩',
-            token: JwtEncode({ ...user, ...database.userDetail[index] }, remember_me)
+            token: JwtEncode(user, remember_me)
         });
     }
     else {
@@ -249,23 +319,18 @@ app.post('/api/register', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/register => ${JSON.stringify(request.body)}`);
     let newUserData = request.body;
     if (
-        'nim' in newUserData &&
+        'telepon' in newUserData &&
         'email' in newUserData &&
         'nama_lengkap' in newUserData &&
-        'password' in newUserData &&
-        'telepon' in newUserData &&
-        'tanggal_lahir' in newUserData &&
         'alamat' in newUserData &&
-        'angkatan' in newUserData &&
-        'prodi' in newUserData
+        'tanggal_lahir' in newUserData &&
+        'password' in newUserData
     ) {
-        const iNim = database.users.findIndex(u => u.nim == newUserData.nim);
         const iEmail = database.users.findIndex(u => u.email == newUserData.email);
         const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
-        const index = Math.max(iNim, iEmail, iPhone);
+        const index = Math.max(iEmail, iPhone);
         if (index >= 0) {
             let result = {};
-            if (iNim >= 0) result.nim = 'NIM Sudah Terpakai! 😭';
             if (iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
             if (iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
             response.json({
@@ -276,35 +341,22 @@ app.post('/api/register', (request, response) => {
         else if (newUserData.password.length >= 128) {
             const currentTime = new Date().getTime();
             newUserData.id = database.users.length + 1;
-            newUserData.nim = newUserData.nim.padStart(12, '0');
             if (!('foto' in newUserData)) newUserData.foto = 'https://via.placeholder.com/966x935';
             newUserData.created_at = currentTime;
             newUserData.updated_at = currentTime;
-            newUser = {
+            const newUser = {
                 id: newUserData.id,
-                nim: newUserData.nim,
+                telepon: newUserData.telepon,
                 email: newUserData.email,
                 nama_lengkap: newUserData.nama_lengkap,
-                password: newUserData.password,
-                telepon: newUserData.telepon,
-                role: newUserData.role,
-                created_at: newUserData.created_at,
-                updated_at: newUserData.updated_at
-            }
-            database.users.push(newUser);
-            SaveDatabase('users');
-            newUserDetail = {
-                id: newUserData.id,
-                foto: newUserData.foto,
-                tanggal_lahir: newUserData.tanggal_lahir,
                 alamat: newUserData.alamat,
-                prodi: newUserData.prodi,
-                angkatan: newUserData.angkatan,
+                tanggal_lahir: newUserData.tanggal_lahir,
+                foto: newUserData.foto,
+                password: newUserData.password,
                 created_at: newUserData.created_at,
                 updated_at: newUserData.updated_at
             }
-            database.userDetail.push(newUserDetail);
-            SaveDatabase('userDetail');
+            WriteAppendGoogleSheetData('users', {...newUser});
             const newUserWithoutPassword = newUser;
             delete newUserWithoutPassword.password;
             response.json({
@@ -327,22 +379,84 @@ app.post('/api/register', (request, response) => {
     }
 });
 
+/** Update Profile */
+app.post('/api/update', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /api/update => ${JSON.stringify(request.body)}`);
+    try { 
+        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        const index = database.users.findIndex(u => u.id == decoded.user.id);
+        if (index >= 0) {
+            if (
+                (
+                    !('nama_lengkap' in request.body) && !('alamat' in request.body) &&
+                    !('tanggal_lahir' in request.body) && !('foto' in request.body) &&
+                    !('password' in request.body)
+                ) ||
+                database.users[index].nama_lengkap == request.body.nama_lengkap ||
+                database.users[index].alamat == request.body.alamat ||
+                database.users[index].tanggal_lahir == request.body.tanggal_lahir ||
+                database.users[index].foto == request.body.foto ||
+                database.users[index].password == request.body.password
+            ) {
+                response.json({
+                    info: 'Tidak Ada Data Profil Yang Berubah! 😝',
+                    message: 'Hemn .. Menarik .. 🤯'
+                });
+            }
+            else {
+                const currentTime = new Date().getTime();
+                if ('password' in request.body) {
+                    if (newUserData.password.length >= 128) {
+                        database.users[index].password = request.body.password;
+                    }
+                    else {
+                        response.json({
+                            info: 'Gagal Memperbaharui Data Profil! 🤧',
+                            message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
+                        });
+                        return;
+                    }
+                }
+                if ('nama_lengkap' in request.body) database.users[index].nama_lengkap = request.body.nama_lengkap;
+                if ('alamat' in request.body) database.users[index].alamat = request.body.alamat;
+                if ('tanggal_lahir' in request.body) database.users[index].tanggal_lahir = request.body.tanggal_lahir;
+                if ('foto' in request.body) database.users[index].foto = request.body.foto;
+                database.users[index].updated_at = currentTime;
+                WriteUpdateGoogleSheetData('users', {...database.users[index]});
+                response.json({
+                    info: 'Berhasil Memperbaharui Data Profil! 😝',
+                    token: JwtEncode(database.users[index])
+                });
+            }
+        }
+        else {
+            response.json({
+                info: 'Gagal Memperbaharui Data Profil! 🤐 User Tidak Ada! 😑',
+                result: error
+            });
+        }
+    }
+    catch (error) {
+        response.json({
+            info: 'Gagal Memperbaharui Data Profil! 🤧 Akses Ditolak! 😷',
+            result: error
+        });
+    }
+});
+
 /** Mahasiswa -- Daftar Mahasiswa */
-app.get('/api/mahasiswa/:id', (request, response) => {
-    if ('id' in request.params) {
-        const parameter = request.params.id.replace(/[^0-9]+/g, '');
+app.get('/api/mahasiswa/:nim', (request, response) => {
+    if ('nim' in request.params) {
+        const parameter = request.params.nim.replace(/[^0-9]+/g, '');
         if (parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/mahasiswa/${parameter}`);
-            const index = database.users.findIndex(u => u.id == parseInt(parameter));
+            const index = database.mahasiswa.findIndex(u => u.nim == parameter);
             if (index >= 0) {
-                let mahasiswa = database.users[index];
-                const mahasiswaDetail = database.userDetail[index];
-                delete mahasiswa.password;
                 response.json({
-                    info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
+                    info: 'Ekstrakurikuler Mahasiswa Univ. Multimedia Nusantara 🤔',
                     result: {
-                        ...mahasiswa,
-                        ...mahasiswaDetail
+                        ...database.mahasiswa[index],
+                        ...database.mahasiswaDetail[index]
                     }
                 });
                 return;
@@ -350,23 +464,20 @@ app.get('/api/mahasiswa/:id', (request, response) => {
         }
         response.json({
             info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
-            message: 'User Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
+            message: 'Mahasiswa Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
         });
     }
 });
 app.get('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa`);
-    let mahasiswa = database.users;
-    for (let i=0; i<mahasiswa.length; i++) {
-        delete mahasiswa[i].password;
-    }
+    let mahasiswa = database.mahasiswa;
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
     try {
         if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
-            sortBy == 'id' || sortBy == 'anggota' ||
-            sortBy == 'created_at' || sortBy == 'updated_at'
+            sortBy == 'id' || sortBy == 'nim' || sortBy == 'email' ||
+            sortBy == 'nama_lengkap' || sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
             if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
             else if (orderBy == 'asc') mahasiswa.sort((a, b) => a[sortBy] - b[sortBy]);
@@ -415,67 +526,6 @@ app.get('/api/mahasiswa', (request, response) => {
         }
     });
 });
-app.post('/api/update', (request, response) => {
-    console.log(`${request.connection.remoteAddress} => /api/update => ${JSON.stringify(request.body)}`);
-    try { 
-        const decoded = jwt.verify(request.body.token, jwtSecretKey);
-        const index = database.users.findIndex(u => u.id == decoded.user.id);
-        if (
-            (
-                !('foto' in request.body) && !('nama_lengkap' in request.body) &&
-                !('password' in request.body) && !('tanggal_lahir' in request.body) &&
-                !('alamat' in request.body) && !('angkatan' in request.body) &&
-                !('prodi' in request.body)
-            ) ||
-            database.userDetail[index].foto == request.body.foto ||
-            database.users[index].nama_lengkap == request.body.nama_lengkap ||
-            database.users[index].password == request.body.password ||
-            database.userDetail[index].tanggal_lahir == request.body.tanggal_lahir ||
-            database.userDetail[index].alamat == request.body.alamat ||
-            database.userDetail[index].angkatan == request.body.angkatan ||
-            database.userDetail[index].prodi == request.body.prodi
-        ) {
-            response.json({
-                info: 'Tidak Ada Data Profil Yang Berubah! 😝',
-                message: 'Hemn .. Menarik .. 🤯'
-            });
-        }
-        else {
-            const currentTime = new Date().getTime();
-            if ('password' in request.body) {
-                if (newUserData.password.length >= 128) {
-                    database.users[index].password = request.body.password;
-                }
-                else {
-                    response.json({
-                        info: 'Gagal Memperbaharui Data Profil! 🤧',
-                        message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
-                    });
-                    return;
-                }
-            }
-            if ('foto' in request.body) database.userDetail[index].foto = request.body.foto;
-            if ('nama_lengkap' in request.body) database.users[index].nama_lengkap = request.body.nama_lengkap;
-            if ('tanggal_lahir' in request.body) database.userDetail[index].tanggal_lahir = request.body.tanggal_lahir;
-            if ('alamat' in request.body) database.userDetail[index].alamat = request.body.alamat;
-            if ('angkatan' in request.body) database.userDetail[index].angkatan = request.body.angkatan;
-            if ('prodi' in request.body) database.userDetail[index].prodi = request.body.prodi;
-            database.users[index].updated_at = currentTime;
-            database.userDetail[index].updated_at = currentTime;
-            SaveDatabase('users');
-            response.json({
-                info: 'Berhasil Memperbaharui Data Profil! 😝',
-                token: JwtEncode(database.users[index])
-            });
-        }
-    }
-    catch (error) {
-        response.json({
-            info: 'Gagal Memperbaharui Data Profil! 🤧 Akses Ditolak! 😷',
-            result: error
-        });
-    }
-});
 
 /** UKM -- Unit Kegiatan Mahasiswa */
 app.get('/api/ukm/:kode', (request, response) => {
@@ -509,7 +559,7 @@ app.get('/api/ukm', (request, response) => {
     try {
         if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
-            sortBy == 'id' || sortBy == 'anggota' ||
+            sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' || sortBy == 'anggota' ||
             sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
             if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
@@ -606,8 +656,8 @@ app.get('/api/perpustakaan', (request, response) => {
     try {
         if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
-            sortBy == 'id' || sortBy == 'isbn' ||
-            sortBy == 'created_at' || sortBy == 'updated_at'
+            sortBy == 'id' || sortBy == 'isbn' || sortBy == 'judul' || sortBy == 'pengarang' || sortBy == 'penerbit' ||
+            sortBy == 'kategori' || sortBy == 'nama_lengkap' || sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
             if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
             else if (orderBy == 'asc') perpustakaan.sort((a, b) => a[sortBy] - b[sortBy]);
@@ -703,8 +753,8 @@ app.get('/api/fasilitas', (request, response) => {
     try {
         if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
-            sortBy == 'id' ||
-            sortBy == 'created_at' || sortBy == 'updated_at'
+            sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' ||
+            sortBy == 'fakultas' || sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
             if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
             else if (orderBy == 'asc') fasilitas.sort((a, b) => a[sortBy] - b[sortBy]);
@@ -800,8 +850,8 @@ app.get('/api/kantin', (request, response) => {
     try {
         if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
-            sortBy == 'id' ||
-            sortBy == 'created_at' || sortBy == 'updated_at'
+            sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' ||
+            sortBy == 'kategori' || sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
             if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
             else if (orderBy == 'asc') kantin.sort((a, b) => a[sortBy] - b[sortBy]);

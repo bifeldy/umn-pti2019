@@ -480,7 +480,7 @@ app.post('/api/update', (request, response) => {
 
 /** Searching */
 app.post('/api/search', (request, response) => {
-    console.log(`${request.connection.remoteAddress} => /api/search => ${JSON.stringify(request.body)}`);
+    console.log(`${request.connection.remoteAddress} => /api/search`);
     const type = request.query['type'];
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];

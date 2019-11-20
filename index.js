@@ -3,7 +3,7 @@ const appName = 'PTI-2019 Mini API 🤭';
 const appDescription = 'Delay Itu Bebas, Drop Itu Pilihan! 😉';
 const appVersion = 'v1.0-BetA Release! 😱';
 const appDev = ['Basilius Bias Astho Christyono 😈', 'Yehezkiel Gunawan 👿'];
-const appDocumentation = 'https://github.com/bifeldy/umn-pti2019';
+const appDocumentation = 'https://documenter.getpostman.com/view/5658787/SW7W5pjd';
 const appRepository = 'https://api.github.com/repos/Bifeldy/umn-pti2019';
 const appRepositoryCommits = `${appRepository}/commits`;
 const appRepositoryContributors = `${appRepository}/contributors`;
@@ -476,6 +476,14 @@ app.post('/api/update', (request, response) => {
             result: error
         });
     }
+});
+
+/** Searching */
+app.post('/api/search', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /api/search => ${JSON.stringify(request.body)}`);
+    const sortBy = request.query['sort'];
+    const orderBy = request.query['order'];
+    //TODO: 
 });
 
 /** Mahasiswa -- Daftar Mahasiswa */

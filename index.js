@@ -23,8 +23,8 @@ let googleApiKey;
 try {
     googleApiKey = require('./umn-pti2019-apiKey.json');
 }
-catch(e) {
-    console.log(e);
+catch(errorLoadCredential) {
+    console.log(`Google Credential File Not Found! './umn-pti2019-apiKey.json'`);
     googleApiKey = JSON.parse(process.env.umn_pti2019_apiKey);
 }
 const googleClient = new google.auth.JWT(

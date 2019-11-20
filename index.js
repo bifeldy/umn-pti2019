@@ -481,9 +481,14 @@ app.post('/api/update', (request, response) => {
 /** Searching */
 app.post('/api/search', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/search => ${JSON.stringify(request.body)}`);
+    const type = request.query['type'];
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
-    //TODO: 
+    //TODO:
+    response.json({
+        info: 'Pencarian Data .. 🤔',
+        message: 'Sayangnya Fitur Pencarian Data Secara Global Masih Belum Ada .. 😥'
+    });
 });
 
 /** Mahasiswa -- Daftar Mahasiswa */
@@ -568,7 +573,6 @@ app.get('/api/mahasiswa', (request, response) => {
         }
     });
 });
-
 app.post('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa => ${JSON.stringify(request.body)}`);
     try { 

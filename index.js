@@ -19,34 +19,40 @@ const externalRequest = require('request');
 /** Google Sheet API */
 const { google } = require('googleapis');
 
-let googleApiKey;
-try {
-    googleApiKey = require('./umn-pti2019-apiKey.json');
-}
-catch(errorLoadCredential) {
-    console.log(`Google Credential File Not Found! './umn-pti2019-apiKey.json'`);
-    console.log(`Using Alternate Config 'process.env.umn_pti2019_apiKey'`);
-    googleApiKey = JSON.parse(process.env.umn_pti2019_apiKey);
-}
-const googleClient = new google.auth.JWT(
-    googleApiKey.client_email,
-    null,
-    googleApiKey.private_key,
-    ['https://www.googleapis.com/auth/spreadsheets']
-);
-googleClient.authorize((err, result) => {
-    if (err) {
-        console.log(err);
-        return;
+var googleApiKey, googleClient, gsApi;
+function InitializeGoogleAPI() {
+    try {
+        googleApiKey = require('./umn-pti2019-apiKey.json');
     }
-    console.log(`Connected to Google Docs SpreadSheet!`);
-    console.log(`Client :: ${googleClient.email}`);
-    console.log(`Token Expiry Date :: ${new Date(result.expiry_date)}`);
-});
-const gsApi = google.sheets({
-    version: "v4",
-    auth: googleClient
-});
+    catch(errorLoadCredential) {
+        console.log(`Google Credential File Not Found! './umn-pti2019-apiKey.json'`);
+        console.log(`Using Alternate Config 'process.env.umn_pti2019_apiKey'`);
+        googleApiKey = JSON.parse(process.env.umn_pti2019_apiKey);
+    }
+    googleClient = new google.auth.JWT(
+        googleApiKey.client_email,
+        null,
+        googleApiKey.private_key,
+        ['https://www.googleapis.com/auth/spreadsheets']
+    );
+}
+function GenerateNewSessionToGoogleAPI() {
+    googleClient.authorize((err, result) => {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        console.log(`Connected to Google Docs SpreadSheet!`);
+        console.log(`Client :: ${googleClient.email}`);
+        console.log(`Token Expiry Date :: ${new Date(result.expiry_date)}`);
+    });
+    gsApi = google.sheets({
+        version: "v4",
+        auth: googleClient
+    });
+}
+InitializeGoogleAPI();
+GenerateNewSessionToGoogleAPI();
 
 /** Our Server Settings */
 const app = express();
@@ -125,12 +131,12 @@ RefreshGoogleSheetData();
 
 /** Saving Database By Writing To GoogleSheet */
 async function WriteUpdateGoogleSheetData(workSheetTab, workSheetTabDataObject) {
+    await GenerateNewSessionToGoogleAPI();
     const updateUser = [];
     const tempKey = await LoadGoogleSheetData(workSheetTab);
     tempKey.forEach(key => {
         updateUser.push(workSheetTabDataObject[key]);
     });
-    console.log(typeof workSheetTabDataObject.id);
     gsApi.spreadsheets.values.update({
         spreadsheetId: appGoogleSheetId,
         range: `${workSheetTab}!A${parseInt(workSheetTabDataObject.id)+1}`,
@@ -144,6 +150,7 @@ async function WriteUpdateGoogleSheetData(workSheetTab, workSheetTabDataObject) 
     }).catch(err => console.log(err));
 }
 async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) {
+    await GenerateNewSessionToGoogleAPI();
     const registerUser = [];
     const tempKey = await LoadGoogleSheetData(workSheetTab);
     tempKey.forEach(key => {
@@ -162,6 +169,7 @@ async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) 
     }).catch(err => console.log(err));
 }
 async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) {
+    GenerateNewSessionToGoogleAPI();
     let newObject = {};
     let newObjectDetail = {};
     const currentTime = new Date().getTime();

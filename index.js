@@ -25,6 +25,7 @@ try {
 }
 catch(errorLoadCredential) {
     console.log(`Google Credential File Not Found! './umn-pti2019-apiKey.json'`);
+    console.log(`Using Alternate Config 'process.env.umn_pti2019_apiKey'`);
     googleApiKey = JSON.parse(process.env.umn_pti2019_apiKey);
 }
 const googleClient = new google.auth.JWT(

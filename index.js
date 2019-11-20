@@ -152,6 +152,40 @@ async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) 
         RefreshGoogleSheetData();
     }).catch(err => console.log(err));
 }
+async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) {
+    let newObject = {};
+    let newObjectDetail = {};
+    const currentTime = new Date().getTime();
+    const tempKey = await LoadGoogleSheetData(object);
+    for (let i=1; i<tempKey.length-2; i++) {
+        if (requestBody[tempKey[i]] == undefined) {
+            return resp.json({
+                info: 'Gagal Menambahkan Data! 🤤',
+                message: 'Data Tidak Lengkap! 😦'
+            });
+        }
+    }
+    tempKey.forEach(key => {
+        newObject[key] = requestBody[key];
+    });
+    newObject.id = database[object].length + 1;
+    newObject.created_at = currentTime;
+    newObject.updated_at = currentTime;
+    const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
+    tempKeyDetail.forEach(key => {
+        newObjectDetail[key] = (requestBody[key] == undefined ? null : requestBody[key]);
+    });
+    newObjectDetail.id = database[objectDetail].length + 1;
+    newObjectDetail.created_at = currentTime;
+    newObjectDetail.updated_at = currentTime;
+    await WriteAppendGoogleSheetData(object, {...newObject});
+    await WriteAppendGoogleSheetData(objectDetail, {...newObjectDetail});
+    await RefreshGoogleSheetData();
+    resp.json({
+        info: 'Berhasil Menambahkan Data! ^_^.~ 😁',
+        result: {...newObject, ...newObjectDetail}
+    });
+}
 
 /** JavaScript Web Token Helper */
 function JwtEncode(user, remember_me) {
@@ -453,7 +487,7 @@ app.get('/api/mahasiswa/:nim', (request, response) => {
             const index = database.mahasiswa.findIndex(u => u.nim == parameter);
             if (index >= 0) {
                 response.json({
-                    info: 'Ekstrakurikuler Mahasiswa Univ. Multimedia Nusantara 🤔',
+                    info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
                     result: {
                         ...database.mahasiswa[index],
                         ...database.mahasiswaDetail[index]
@@ -525,6 +559,40 @@ app.get('/api/mahasiswa', (request, response) => {
             mahasiswa
         }
     });
+});
+
+app.post('/api/mahasiswa', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /api/mahasiswa => ${JSON.stringify(request.body)}`);
+    try { 
+        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        const index = database.users.findIndex(u => u.id == decoded.user.id);
+        if (index >= 0) {
+            const iNim = database.mahasiswa.findIndex(mhs => mhs.nim == request.body.nim);
+            const iEmail = database.mahasiswa.findIndex(mhs => mhs.email == request.body.email);
+            const iPhone = database.mahasiswaDetail.findIndex(mhs => mhs.telepon == request.body.telepon);
+            const idx = Math.max(iNim, iEmail, iPhone);
+            if (idx >= 0) {
+                let result = {};
+                if (iNim >= 0) result.nim = 'NIM Sudah Terpakai! 😭';
+                if (iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
+                if (iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
+                response.json({
+                    info: 'Gagal Menambah Mahasiswa! 🤧 Data Sudah Ada! 😗',
+                    result
+                });
+            }
+            else AddNewDataToGoogleSheet('mahasiswa', 'mahasiswaDetail', request.body, response);
+        }
+        else {
+            throw 'Harap Melakukan Login Ulang! 😯';
+        }
+    }
+    catch (error) {
+        response.json({
+            info: 'Gagal Menambah Mahasiswa! 🤧 Akses Ditolak! 😷',
+            result: error
+        });
+    }
 });
 
 /** UKM -- Unit Kegiatan Mahasiswa */
@@ -614,7 +682,21 @@ app.post('/api/ukm', (request, response) => {
     try { 
         const decoded = jwt.verify(request.body.token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        //TODO:
+        if (index >= 0) {
+            const iKode = database.ukm.findIndex(uk => uk.kode == request.body.kode);
+            if (iKode >= 0) {
+                let result = {};
+                if (iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
+                response.json({
+                    info: 'Gagal Menambah Ekstrakurikuler! 🤧 Data Sudah Ada! 😗',
+                    result
+                });
+            }
+            else AddNewDataToGoogleSheet('ukm', 'ukmDetail', request.body, response);
+        }
+        else {
+            throw 'Harap Melakukan Login Ulang! 😯';
+        }
     }
     catch (error) {
         response.json({
@@ -711,7 +793,21 @@ app.post('/api/perpustakaan', (request, response) => {
     try { 
         const decoded = jwt.verify(request.body.token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        //TODO:
+        if (index >= 0) {
+            const iIsbn = database.perpustakaan.findIndex(pstk => pstk.isbn == request.body.isbn);
+            if (iIsbn >= 0) {
+                let result = {};
+                if (iIsbn >= 0) result.kode = 'ISBN Sudah Terpakai! 😭';
+                response.json({
+                    info: 'Gagal Menambah Pustaka! 🤧 Data Sudah Ada! 😗',
+                    result
+                });
+            }
+            else AddNewDataToGoogleSheet('perpustakaan', 'perpustakaanDetail', request.body, response);
+        }
+        else {
+            throw 'Harap Melakukan Login Ulang! 😯';
+        }
     }
     catch (error) {
         response.json({
@@ -808,7 +904,21 @@ app.post('/api/fasilitas', (request, response) => {
     try { 
         const decoded = jwt.verify(request.body.token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        //TODO:
+        if (index >= 0) {
+            const iKode = database.fasilitas.findIndex(fs => fs.kode == request.body.kode);
+            if (iKode >= 0) {
+                let result = {};
+                if (iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
+                response.json({
+                    info: 'Gagal Menambah Fasilitas! 🤧 Data Sudah Ada! 😗',
+                    result
+                });
+            }
+            else AddNewDataToGoogleSheet('fasilitas', 'fasilitasDetail', request.body, response);
+        }
+        else {
+            throw 'Harap Melakukan Login Ulang! 😯';
+        }
     }
     catch (error) {
         response.json({
@@ -905,7 +1015,21 @@ app.post('/api/kantin', (request, response) => {
     try { 
         const decoded = jwt.verify(request.body.token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        //TODO:
+        if (index >= 0) {
+            const iKode = database.kantin.findIndex(kn => kn.kode == request.body.kode);
+            if (iKode >= 0) {
+                let result = {};
+                if (iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
+                response.json({
+                    info: 'Gagal Menambah Kantin! 🤧 Data Sudah Ada! 😗',
+                    result
+                });
+            }
+            else AddNewDataToGoogleSheet('kantin', 'kantinDetail', request.body, response);
+        }
+        else {
+            throw 'Harap Melakukan Login Ulang! 😯';
+        }
     }
     catch (error) {
         response.json({

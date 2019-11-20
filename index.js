@@ -3,7 +3,7 @@ const appName = 'PTI-2019 Mini API 🤭';
 const appDescription = 'Delay Itu Bebas, Drop Itu Pilihan! 😉';
 const appVersion = 'v1.0-BetA Release! 😱';
 const appDev = ['Basilius Bias Astho Christyono 😈', 'Yehezkiel Gunawan 👿'];
-const appDocumentation = 'https://documenter.getpostman.com/view/5658787/SW7W5pjd';
+const appDocumentation = 'https://github.com/bifeldy/umn-pti2019';
 const appRepository = 'https://api.github.com/repos/Bifeldy/umn-pti2019';
 const appRepositoryCommits = `${appRepository}/commits`;
 const appRepositoryContributors = `${appRepository}/contributors`;
@@ -15,7 +15,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const externalRequest = require('request');
-const open = require('open');
 
 /** Google Sheet API */
 const { google } = require('googleapis');
@@ -920,7 +919,6 @@ app.post('/api/kantin', (request, response) => {
 app.get('*', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /notFound`);
     response.redirect(appDocumentation);
-    open('https://github.com/bifeldy/umn-pti2019');
 });
 
 // Host Server On Current Network

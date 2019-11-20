@@ -486,7 +486,7 @@ app.get('/api/search', (request, response) => {
     const orderBy = request.query['order'];
     //TODO:
     response.json({
-        info: `Pencarian Data '${type}' Diurutkan Berdasarkan ${sortBy} Secara ${orderBy} .. 🤔`,
+        info: `Pencarian Data '${type}' Diurutkan Berdasarkan '${sortBy}' Secara '${orderBy}' .. 🤔`,
         message: 'Sayangnya Fitur Pencarian Data Secara Global Masih Belum Ada .. 😥'
     });
 });

@@ -42,7 +42,7 @@ const gsApi = google.sheets({
 /** Our Server Settings */
 const app = express();
 const host = '0.0.0.0'; // Host On Current IP (Local & Public)
-const port = process.env.PORT || 80 || 8000 || 8080;
+const port = process.env.PORT || 80;
 
 /** Our App Server */
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -922,5 +922,12 @@ app.get('*', (request, response) => {
 });
 
 // Host Server On Current Network
-app.listen(port, host, () => console.log(`Server Running ${host}:${port} 🤐`));
+const server = app.listen(port, host, () => {
+    console.log(`Server Running :: ${server.address().address}:${server.address().port} 🤐`);
+}).on('error', err => {
+    console.log(`Server ${err.address}:${err.port} Already In Use 🤐`);
+    const serverAlt = app.listen(0, host, () => {
+        console.log(`Alternate Server Running :: ${serverAlt.address().address}:${serverAlt.address().port} 🤐`);
+    });
+});
 module.exports = app;

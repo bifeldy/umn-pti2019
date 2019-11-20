@@ -18,7 +18,7 @@ const externalRequest = require('request');
 
 /** Google Sheet API */
 const { google } = require('googleapis');
-const googleApiKey = JSON.parse(process.env.umn_pti2019_apiKey) || require('./umn-pti2019-apiKey.json');
+const googleApiKey = require('./umn-pti2019-apiKey.json') || JSON.parse(process.env.umn_pti2019_apiKey);
 const googleClient = new google.auth.JWT(
     googleApiKey.client_email,
     null,
@@ -342,9 +342,11 @@ app.post('/api/login', (request, response) => {
 /** Verify & Get User Data */
 app.post('/api/verify', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/verify => ${JSON.stringify(request.body)}`);
+    let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+    if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
     response.json({
         info: 'User Selesai Di Verifikasi! UwUu~ 😚',
-        result: JwtDecode(request.body.token)
+        result: JwtDecode(token)
     });
 });
 
@@ -416,8 +418,10 @@ app.post('/api/register', (request, response) => {
 /** Update Profile */
 app.post('/api/update', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/update => ${JSON.stringify(request.body)}`);
-    try { 
-        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+    try {
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         if (index >= 0) {
             if (
@@ -576,7 +580,9 @@ app.get('/api/mahasiswa', (request, response) => {
 app.post('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa => ${JSON.stringify(request.body)}`);
     try { 
-        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         if (index >= 0) {
             const iNim = database.mahasiswa.findIndex(mhs => mhs.nim == request.body.nim);
@@ -692,7 +698,9 @@ app.get('/api/ukm', (request, response) => {
 app.post('/api/ukm', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/ukm => ${JSON.stringify(request.body)}`);
     try { 
-        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         if (index >= 0) {
             const iKode = database.ukm.findIndex(uk => uk.kode == request.body.kode);
@@ -803,7 +811,9 @@ app.get('/api/perpustakaan', (request, response) => {
 app.post('/api/perpustakaan', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/perpustakaan => ${JSON.stringify(request.body)}`);
     try { 
-        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         if (index >= 0) {
             const iIsbn = database.perpustakaan.findIndex(pstk => pstk.isbn == request.body.isbn);
@@ -914,7 +924,9 @@ app.get('/api/fasilitas', (request, response) => {
 app.post('/api/fasilitas', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/fasilitas => ${JSON.stringify(request.body)}`);
     try { 
-        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         if (index >= 0) {
             const iKode = database.fasilitas.findIndex(fs => fs.kode == request.body.kode);
@@ -1025,7 +1037,9 @@ app.get('/api/kantin', (request, response) => {
 app.post('/api/kantin', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/kantin => ${JSON.stringify(request.body)}`);
     try { 
-        const decoded = jwt.verify(request.body.token, jwtSecretKey);
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         if (index >= 0) {
             const iKode = database.kantin.findIndex(kn => kn.kode == request.body.kode);

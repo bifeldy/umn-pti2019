@@ -1,7 +1,7 @@
 /** Project Information */
 const appName = 'PTI-2019 Mini API 🤭';
 const appDescription = 'Delay Itu Bebas, Drop Itu Pilihan! 😉';
-const appVersion = 'v1.0-BetA Release! 😱';
+const appVersion = 'v1.0 Official Release! 😱';
 const appDev = ['Basilius Bias Astho Christyono 😈', 'Yehezkiel Gunawan 👿'];
 const appDocumentation = 'https://documenter.getpostman.com/view/5658787/SW7W5pjd';
 const appRepository = 'https://api.github.com/repos/Bifeldy/umn-pti2019';

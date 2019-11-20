@@ -15,6 +15,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const externalRequest = require('request');
+const open = require('open');
 
 /** Google Sheet API */
 const { google } = require('googleapis');
@@ -919,6 +920,7 @@ app.post('/api/kantin', (request, response) => {
 app.get('*', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /notFound`);
     response.redirect(appDocumentation);
+    open('https://github.com/bifeldy/umn-pti2019');
 });
 
 // Host Server On Current Network

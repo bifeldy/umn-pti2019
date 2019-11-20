@@ -18,7 +18,7 @@ const externalRequest = require('request');
 
 /** Google Sheet API */
 const { google } = require('googleapis');
-const googleApiKey = JSON.parse(process.env.umn-pti2019-apiKey) || require('./umn-pti2019-apiKey.json');
+const googleApiKey = JSON.parse(process.env['umn-pti2019-apiKey']) || require('./umn-pti2019-apiKey.json');
 const googleClient = new google.auth.JWT(
     googleApiKey.client_email,
     null,

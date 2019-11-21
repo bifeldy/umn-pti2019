@@ -222,6 +222,11 @@ function JwtDecode(token) {
     catch (error) { return error; }
 }
 
+/** Default Response Data NotFound */
+function ResponseJsonDataNotFound(response, info, message) {
+    return response.status(404).json({info, message});
+}
+
 /** Home Page */
 app.get('/', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /`);
@@ -435,7 +440,25 @@ app.post('/api/register', (request, response) => {
     }
 });
 
-/** Update Profile */
+/** User Profile */
+app.get('/api/user/:id', (request, response) => {
+    if ('nim' in request.params) {
+        const parameter = request.params.nim.replace(/[^0-9]+/g, '');
+        if (parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}`);
+            const index = database.users.findIndex(u => u.id == parameter);
+            const user = {...database.users[index]};
+            if (index >= 0) {
+                response.json({
+                    info: 'Data Profile User 🤔',
+                    result: user
+                });
+                return;
+            }
+        }
+    }
+    ResponseJsonDataNotFound(response, 'Data Profile User 🤔', 'User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
+});
 app.post('/api/update', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/update => ${JSON.stringify(request.body)}`);
     try {
@@ -495,7 +518,7 @@ app.post('/api/update', (request, response) => {
         }
     }
     catch (error) {
-        response.statusCode(401).json({
+        response.status(401).json({
             info: 'Gagal Memperbaharui Data Profil! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -533,11 +556,8 @@ app.get('/api/mahasiswa/:nim', (request, response) => {
                 return;
             }
         }
-        response.json({
-            info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
-            message: 'Mahasiswa Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
-        });
     }
+    ResponseJsonDataNotFound(response, 'Mahasiswa Univ. Multimedia Nusantara 🤔', 'Mahasiswa Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
 app.get('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa`);
@@ -626,7 +646,7 @@ app.post('/api/mahasiswa', (request, response) => {
         }
     }
     catch (error) {
-        response.statusCode(401).json({
+        response.status(401).json({
             info: 'Gagal Menambah Mahasiswa! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -651,11 +671,8 @@ app.get('/api/ukm/:kode', (request, response) => {
                 return;
             }
         }
-        response.json({
-            info: 'Ekstrakurikuler Mahasiswa Univ. Multimedia Nusantara 🤔',
-            message: 'Ekstrakurikuler Mahasiswa Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
-        });
     }
+    ResponseJsonDataNotFound(response, 'Ekstrakurikuler Mahasiswa Univ. Multimedia Nusantara 🤔', 'Ekstrakurikuler Mahasiswa Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
 app.get('/api/ukm', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/ukm`);
@@ -739,7 +756,7 @@ app.post('/api/ukm', (request, response) => {
         }
     }
     catch (error) {
-        response.statusCode(401).json({
+        response.status(401).json({
             info: 'Gagal Menambah Ekstrakurikuler Mahasiswa! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -764,11 +781,8 @@ app.get('/api/perpustakaan/:isbn', (request, response) => {
                 return;
             }
         }
-        response.json({
-            info: 'Pustaka Univ. Multimedia Nusantara 🤔',
-            message: 'Pustaka Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
-        });
     }
+    ResponseJsonDataNotFound(response, 'Pustaka Univ. Multimedia Nusantara 🤔', 'Pustaka Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
 app.get('/api/perpustakaan', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/perpustakaan`);
@@ -852,7 +866,7 @@ app.post('/api/perpustakaan', (request, response) => {
         }
     }
     catch (error) {
-        response.statusCode(401).json({
+        response.status(401).json({
             info: 'Gagal Menambah Pustaka! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -877,11 +891,8 @@ app.get('/api/fasilitas/:kode', (request, response) => {
                 return;
             }
         }
-        response.json({
-            info: 'Fasilitas Univ. Multimedia Nusantara 🤔',
-            message: 'Fasilitas Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
-        });
     }
+    ResponseJsonDataNotFound(response, 'Fasilitas Univ. Multimedia Nusantara 🤔', 'Fasilitas Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
 app.get('/api/fasilitas', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/fasilitas`);
@@ -965,7 +976,7 @@ app.post('/api/fasilitas', (request, response) => {
         }
     }
     catch (error) {
-        response.statusCode(401).json({
+        response.status(401).json({
             info: 'Gagal Menambah Fasilitas! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -990,11 +1001,8 @@ app.get('/api/kantin/:kode', (request, response) => {
                 return;
             }
         }
-        response.json({
-            info: 'Jajanan Univ. Multimedia Nusantara 🤔',
-            message: 'Jajanan Yang Anda Cari Tidak Dapat Ditemukan~ 😏'
-        });
     }
+    ResponseJsonDataNotFound(response, 'Jajanan Univ. Multimedia Nusantara 🤔', 'Jajanan Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
 app.get('/api/kantin', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/kantin`);
@@ -1078,7 +1086,7 @@ app.post('/api/kantin', (request, response) => {
         }
     }
     catch (error) {
-        response.statusCode(401).json({
+        response.status(401).json({
             info: 'Gagal Menambah Jajanan! 🤧 Akses Ditolak! 😷',
             result: error
         });

@@ -392,8 +392,8 @@ app.post('/api/register', (request, response) => {
         newUserData.telepon = newUserData.telepon.replace(/[^0-9]+/g, '');
         if (newUserData.telepon != '') {
             const iUserName = database.users.findIndex(u => u.user_name == newUserData.user_name.toLowerCase());
-            const iEmail = database.users.findIndex(u => u.email == newUserData.email.toLowerCase());
             const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
+            const iEmail = database.users.findIndex(u => u.email == newUserData.email.toLowerCase());
             const index = Math.max(iUserName, iEmail, iPhone);
             if (index >= 0) {
                 let result = {};
@@ -414,7 +414,7 @@ app.post('/api/register', (request, response) => {
                 const newUser = {
                     id: newUserData.id,
                     user_name: newUserData.user_name.toLowerCase(),
-                    telepon: newUserData.telepon.toLowerCase(),
+                    telepon: newUserData.telepon,
                     email: newUserData.email.toLowerCase(),
                     nama_lengkap: newUserData.nama_lengkap,
                     alamat: newUserData.alamat,

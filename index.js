@@ -457,7 +457,7 @@ app.post('/api/register', (request, response) => {
 });
 
 /** User Profile */
-app.get('/api/user/:userName', (request, response) => {
+app.get('/api/user/:user_name', (request, response) => {
     if ('user_name' in request.params) {
         const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
         if (parameter != '') {

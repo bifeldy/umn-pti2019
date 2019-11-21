@@ -192,8 +192,16 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
     newObject.created_at = currentTime;
     newObject.updated_at = currentTime;
     const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
+    for (let i=1; i<tempKeyDetail.length-2; i++) {
+        if (requestBody[tempKeyDetail[i]] == undefined) {
+            return resp.json({
+                info: 'Gagal Menambahkan Data! 🤤',
+                message: 'Data Tidak Lengkap! 😦'
+            });
+        }
+    }
     tempKeyDetail.forEach(key => {
-        newObjectDetail[key] = (requestBody[key] == undefined ? null : requestBody[key]);
+        newObjectDetail[key] = requestBody[key];
     });
     newObjectDetail.id = database[objectDetail].length + 1;
     newObjectDetail.created_at = currentTime;

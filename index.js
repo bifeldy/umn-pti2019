@@ -442,8 +442,8 @@ app.post('/api/register', (request, response) => {
 
 /** User Profile */
 app.get('/api/user/:id', (request, response) => {
-    if ('nim' in request.params) {
-        const parameter = request.params.nim.replace(/[^0-9]+/g, '');
+    if ('id' in request.params) {
+        const parameter = request.params.id.replace(/[^0-9]+/g, '');
         if (parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/user/${parameter}`);
             const index = database.users.findIndex(u => u.id == parameter);

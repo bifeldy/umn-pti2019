@@ -15,6 +15,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const externalRequest = require('request');
+const favicon = require('serve-favicon');
+const path = require('path');
 
 /** Google Sheet API */
 const { google } = require('googleapis');
@@ -63,6 +65,7 @@ const port = process.env.PORT || 80;
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
+app.use(favicon(path.join(__dirname, 'favicon.ico')));
 
 /** Our Global Variables Data */
 const jwtAlgorithm = 'HS512';

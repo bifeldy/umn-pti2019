@@ -338,9 +338,10 @@ app.post('/api/login', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/login => ${JSON.stringify(request.body)}`);
     const index = database.users.findIndex(u =>
         (
-            u.email == request.body.user_name ||
+            u.user_name == request.body.user_name.toLowerCase() ||
+            u.email == request.body.user_name.toLowerCase() ||
             u.telepon == request.body.user_name
-        ) && 
+        ) &&
         u.password == request.body.password
     );
     if (index >= 0) {
@@ -380,6 +381,7 @@ app.post('/api/register', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/register => ${JSON.stringify(request.body)}`);
     let newUserData = request.body;
     if (
+        'user_name' in newUserData &&
         'telepon' in newUserData &&
         'email' in newUserData &&
         'nama_lengkap' in newUserData &&
@@ -387,57 +389,62 @@ app.post('/api/register', (request, response) => {
         'tanggal_lahir' in newUserData &&
         'password' in newUserData
     ) {
-        const iEmail = database.users.findIndex(u => u.email == newUserData.email);
-        const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
-        const index = Math.max(iEmail, iPhone);
-        if (index >= 0) {
-            let result = {};
-            if (iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
-            if (iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
-            response.json({
-                info: 'Gagal Mendaftarkan User Baru! T_T 😪',
-                result
-            });
-        }
-        else if (newUserData.password.length >= 128) {
-            const currentTime = new Date().getTime();
-            newUserData.id = database.users.length + 1;
-            if (!('foto' in newUserData)) newUserData.foto = 'https://via.placeholder.com/966x935';
-            newUserData.created_at = currentTime;
-            newUserData.updated_at = currentTime;
-            const newUser = {
-                id: newUserData.id,
-                telepon: newUserData.telepon,
-                email: newUserData.email,
-                nama_lengkap: newUserData.nama_lengkap,
-                alamat: newUserData.alamat,
-                tanggal_lahir: newUserData.tanggal_lahir,
-                foto: newUserData.foto,
-                password: newUserData.password,
-                created_at: newUserData.created_at,
-                updated_at: newUserData.updated_at
+        newUserData.telepon = newUserData.telepon.replace(/[^0-9]+/g, '');
+        if (newUserData.telepon != '') {
+            const iUserName = database.users.findIndex(u => u.user_name == newUserData.user_name.toLowerCase());
+            const iEmail = database.users.findIndex(u => u.email == newUserData.email.toLowerCase());
+            const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
+            const index = Math.max(iUserName, iEmail, iPhone);
+            if (index >= 0) {
+                let result = {};
+                if (iUserName >= 0) result.user_name = 'Username Sudah Terpakai! 😭';
+                if (iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
+                if (iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
+                response.json({
+                    info: 'Gagal Mendaftarkan User Baru! T_T 😪',
+                    result
+                });
             }
-            WriteAppendGoogleSheetData('users', {...newUser});
-            const newUserWithoutPassword = newUser;
-            delete newUserWithoutPassword.password;
-            response.json({
-                info: 'Berhasil Mendaftarkan User Baru! ^_^.~ 😁',
-                token: JwtEncode(newUserWithoutPassword)
-            });
-        }
-        else {
-            response.json({
-                info: 'Gagal Mendaftarkan User Baru! T_T 😪',
-                message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
-            });
+            else if (newUserData.password.length >= 128) {
+                const currentTime = new Date().getTime();
+                newUserData.id = database.users.length + 1;
+                if (!('foto' in newUserData)) newUserData.foto = 'https://via.placeholder.com/966x935';
+                newUserData.created_at = currentTime;
+                newUserData.updated_at = currentTime;
+                const newUser = {
+                    id: newUserData.id,
+                    user_name: newUserData.user_name.toLowerCase(),
+                    telepon: newUserData.telepon.toLowerCase(),
+                    email: newUserData.email.toLowerCase(),
+                    nama_lengkap: newUserData.nama_lengkap,
+                    alamat: newUserData.alamat,
+                    tanggal_lahir: newUserData.tanggal_lahir,
+                    foto: newUserData.foto,
+                    password: newUserData.password,
+                    created_at: newUserData.created_at,
+                    updated_at: newUserData.updated_at
+                }
+                WriteAppendGoogleSheetData('users', {...newUser});
+                const newUserWithoutPassword = newUser;
+                delete newUserWithoutPassword.password;
+                response.json({
+                    info: 'Berhasil Mendaftarkan User Baru! ^_^.~ 😁',
+                    token: JwtEncode(newUserWithoutPassword)
+                });
+            }
+            else {
+                response.json({
+                    info: 'Gagal Mendaftarkan User Baru! T_T 😪',
+                    message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
+                });
+            }
+            return;
         }
     }
-    else {
-        response.json({
-            info: 'Gagal Mendaftarkan User Baru! T_T 😒',
-            message: 'Data Pendaftar Tidak Lengkap! 😦'
-        });
-    }
+    response.json({
+        info: 'Gagal Mendaftarkan User Baru! T_T 😒',
+        message: 'Data Pendaftar Tidak Lengkap! 😦'
+    });
 });
 
 /** User Profile */

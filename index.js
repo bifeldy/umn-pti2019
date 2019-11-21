@@ -448,6 +448,7 @@ app.get('/api/user/:id', (request, response) => {
             console.log(`${request.connection.remoteAddress} => /api/user/${parameter}`);
             const index = database.users.findIndex(u => u.id == parameter);
             const user = {...database.users[index]};
+            delete user.password;
             if (index >= 0) {
                 response.json({
                     info: 'Data Profile User 🤔',

@@ -398,7 +398,8 @@ app.post('/api/register', (request, response) => {
         'password' in newUserData
     ) {
         newUserData.telepon = newUserData.telepon.replace(/[^0-9]+/g, '');
-        if (newUserData.telepon != '') {
+        newUserData.user_name = newUserData.user_name.replace(/[^0-9a-zA-Z]+/g, '');
+        if (newUserData.telepon != '' && newUserData.user_name != '') {
             const iUserName = database.users.findIndex(u => u.user_name == newUserData.user_name.toLowerCase());
             const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
             const iEmail = database.users.findIndex(u => u.email == newUserData.email.toLowerCase());
@@ -456,12 +457,12 @@ app.post('/api/register', (request, response) => {
 });
 
 /** User Profile */
-app.get('/api/user/:id', (request, response) => {
-    if ('id' in request.params) {
-        const parameter = request.params.id.replace(/[^0-9]+/g, '');
+app.get('/api/user/:userName', (request, response) => {
+    if ('user_name' in request.params) {
+        const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
         if (parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/user/${parameter}`);
-            const index = database.users.findIndex(u => u.id == parameter);
+            const index = database.users.findIndex(u => u.user_name == parameter);
             const user = {...database.users[index]};
             delete user.password;
             if (index >= 0) {

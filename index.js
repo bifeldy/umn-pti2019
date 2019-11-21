@@ -492,7 +492,7 @@ app.post('/api/update', (request, response) => {
         }
     }
     catch (error) {
-        response.json({
+        response.statusCode(401).json({
             info: 'Gagal Memperbaharui Data Profil! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -623,7 +623,7 @@ app.post('/api/mahasiswa', (request, response) => {
         }
     }
     catch (error) {
-        response.json({
+        response.statusCode(401).json({
             info: 'Gagal Menambah Mahasiswa! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -736,7 +736,7 @@ app.post('/api/ukm', (request, response) => {
         }
     }
     catch (error) {
-        response.json({
+        response.statusCode(401).json({
             info: 'Gagal Menambah Ekstrakurikuler Mahasiswa! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -849,7 +849,7 @@ app.post('/api/perpustakaan', (request, response) => {
         }
     }
     catch (error) {
-        response.json({
+        response.statusCode(401).json({
             info: 'Gagal Menambah Pustaka! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -962,7 +962,7 @@ app.post('/api/fasilitas', (request, response) => {
         }
     }
     catch (error) {
-        response.json({
+        response.statusCode(401).json({
             info: 'Gagal Menambah Fasilitas! 🤧 Akses Ditolak! 😷',
             result: error
         });
@@ -1075,7 +1075,7 @@ app.post('/api/kantin', (request, response) => {
         }
     }
     catch (error) {
-        response.json({
+        response.statusCode(401).json({
             info: 'Gagal Menambah Jajanan! 🤧 Akses Ditolak! 😷',
             result: error
         });

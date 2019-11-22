@@ -594,14 +594,57 @@ app.get('/api/user/:user_name/favorites', (request, response) => {
 /** Searching */
 app.get('/api/search', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/search`);
-    const type = request.query['type'];
-    const sortBy = request.query['sort'];
-    const orderBy = request.query['order'];
-    //TODO:
-    response.json({
-        info: `Pencarian Data '${type}' Diurutkan Berdasarkan '${sortBy}' Secara '${orderBy}' .. 🤔`,
-        message: 'Sayangnya Fitur Pencarian Data Secara Global Masih Belum Ada .. 😥'
-    });
+    const queryBy = request.query['query'].replace(/[^0-9a-zA-Z]+/g, '');
+    if(queryBy) {
+        GenerateNewSessionToGoogleAPI();
+        RefreshGoogleSheetData();
+        let search_result = {
+            search_fasilitas: [],
+            search_kantin: [],
+            search_perpustakaan: [],
+            search_ukm: [],
+            search_mahasiswa: [],
+            search_users: [],
+        };
+        //TODO: Search Through All Arrays Of Object
+        //
+        //
+        //
+        //TODO: Search Through All Arrays Of Object
+        const typeBy = request.query['type'];
+        if(typeBy) {
+            const sortBy = request.query['sort'];
+            const orderBy = request.query['order'];
+            if(sortBy) {
+                try {
+                    Object.keys(search_result).forEach(key => {
+                        search_result[key].sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
+                    });
+                    if(orderBy == 'desc') {
+                        Object.keys(search_result).forEach(key => {
+                            search_result[key].sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
+                        });
+                    }
+                }
+                catch (err) {
+                    Object.keys(search_result).forEach(key => {
+                        search_result[key].sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
+                    });
+                    if(orderBy == 'desc') {
+                        Object.keys(search_result).forEach(key => {
+                            search_result[key].sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
+                        });
+                    }
+                }
+            }
+        }
+        response.json({
+            info: `Pencarian Data '${typeBy}' Diurutkan Berdasarkan '${sortBy}' Secara '${orderBy}' .. 🤔`,
+            message: 'Sayangnya Fitur Pencarian Data Secara Global Masih Belum Ada .. 😥'
+        });
+        return;
+    }
+    ResponseJsonDataNotFound(response, 'Pencarian Data 😑', 'Tidak Ada Kata Kunci Yang Diberikan~ 😥');
 });
 
 /** Mahasiswa -- Daftar Mahasiswa */

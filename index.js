@@ -178,7 +178,11 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
     const currentTime = new Date().getTime();
     const tempKey = await LoadGoogleSheetData(object);
     for(let i=1; i<tempKey.length-2; i++) {
-        if(requestBody[tempKey[i]] == undefined) {
+        if (
+            requestBody[tempKey[i]] == undefined ||
+            requestBody[tempKey[i]] == null ||
+            requestBody[tempKey[i]] == ''
+        ) {
             return resp.status(400).json({
                 info: 'Gagal Menambahkan Data! 🤤',
                 message: 'Data Tidak Lengkap! 😦'
@@ -193,7 +197,11 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
     newObject.updated_at = currentTime;
     const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
     for(let i=1; i<tempKeyDetail.length-2; i++) {
-        if(requestBody[tempKeyDetail[i]] == undefined) {
+        if (
+            requestBody[tempKeyDetail[i]] == undefined ||
+            requestBody[tempKeyDetail[i]] == null ||
+            requestBody[tempKeyDetail[i]] == ''
+        ) {
             return resp.status(400).json({
                 info: 'Gagal Menambahkan Data! 🤤',
                 message: 'Data Tidak Lengkap! 😦'
@@ -390,13 +398,13 @@ app.post('/api/register', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/register => ${JSON.stringify(request.body)}`);
     let newUserData = request.body;
     if (
-        'user_name' in newUserData &&
-        'telepon' in newUserData &&
-        'email' in newUserData &&
-        'nama_lengkap' in newUserData &&
-        'alamat' in newUserData &&
-        'tanggal_lahir' in newUserData &&
-        'password' in newUserData
+        'user_name' in newUserData && newUserData.user_name != null &&  newUserData.user_name != '' &&  newUserData.user_name != undefined &&
+        'telepon' in newUserData && newUserData.telepon != null &&  newUserData.telepon != '' &&  newUserData.telepon != undefined &&
+        'email' in newUserData && newUserData.email != null &&  newUserData.email != '' &&  newUserData.email != undefined &&
+        'nama_lengkap' in newUserData && newUserData.nama_lengkap != null &&  newUserData.nama_lengkap != '' &&  newUserData.nama_lengkap != undefined &&
+        'alamat' in newUserData && newUserData.alamat != null &&  newUserData.alamat != '' &&  newUserData.alamat != undefined &&
+        'tanggal_lahir' in newUserData && newUserData.tanggal_lahir != null &&  newUserData.tanggal_lahir != '' &&  newUserData.tanggal_lahir != undefined &&
+        'password' in newUserData && newUserData.password != null &&  newUserData.password != '' &&  newUserData.password != undefined
     ) {
         newUserData.telepon = newUserData.telepon.replace(/[^0-9]+/g, '');
         newUserData.user_name = newUserData.user_name.replace(/[^0-9a-zA-Z]+/g, '');

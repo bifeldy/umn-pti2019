@@ -216,13 +216,13 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
 }
 
 /** JavaScript Web Token Helper */
-function JwtEncode(user, remember_me) {
+function JwtEncode(user, remember_me = false) {
     return jwt.sign({user}, jwtSecretKey, {
         algorithm: jwtAlgorithm,
         issuer: jwtIssuer,
         audience: jwtAudience,
         // Can Remember Login up To 1 Days
-        expiresIn: remember_me ? (24*60*60) : jwtExpiredIn,
+        expiresIn: remember_me == true ? (24*60*60) : jwtExpiredIn,
     });
 }
 
@@ -350,12 +350,7 @@ app.post('/api/login', (request, response) => {
     );
     if(index >= 0) {
         const { password, ...user } = database.users[index];
-        let remember_me = false
-        if('remember_me' in request.body) {
-            if(JSON.parse(request.body.remember_me) == true) {
-                remember_me = true
-            }
-        }
+        const remember_me = ('remember_me' in request.body && JSON.parse(request.body.remember_me) == true);
         response.json({
             info: 'Berhasil Login. Yeay! 🤩',
             token: JwtEncode(user, remember_me)

@@ -86,7 +86,8 @@ const googleDocsWorksheet = [
     'ukmDetail',
     'mahasiswa',
     'mahasiswaDetail',
-    'users'
+    'users',
+    'userFavorites'
 ];
 
 /** Our Local Database */
@@ -101,7 +102,8 @@ let database = {
     ukmDetail: [],
     mahasiswa: [],
     mahasiswaDetail: [],
-    users: []
+    users: [],
+    userFavorites: []
 };
 
 /** Loading Database By Reading To GoogleSheet */
@@ -471,7 +473,7 @@ app.get('/api/user/:user_name', (request, response) => {
         const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
         if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/user/${parameter}`);
-            const index = database.users.findIndex(u => u.user_name == parameter);
+            const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
             const user = {...database.users[index]};
             delete user.password;
             if(index >= 0) {
@@ -550,6 +552,44 @@ app.post('/api/update', (request, response) => {
         });
     }
 });
+app.get('/api/user/:user_name/favorites', (request, response) => {
+    if('user_name' in request.params) {
+        const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
+        if(parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/favorites`);
+            const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
+            if(index >= 0) {
+                let favorites = database.userFavorites.filter(fav => fav.user_name == database.users[index].user_name);
+                const typeBy = request.query['type'];
+                if(typeBy) {
+                    favorites = favorites.filter(fv => fv.type == typeBy);
+                    const sortBy = request.query['sort'];
+                    const orderBy = request.query['order'];
+                    if(sortBy) {
+                        try {
+                            favorites.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
+                            if(orderBy == 'desc') {
+                                favorites.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
+                            }
+                        }
+                        catch (err) {
+                            favorites.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
+                            if(orderBy == 'desc') {
+                                favorites.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
+                            }
+                        }
+                    }
+                }
+                response.json({
+                    info: 'Data Favorite User 🤔',
+                    result: favorites
+                });
+                return;
+            }
+        }
+    }
+    ResponseJsonDataNotFound(response, 'Data Favorite User 🤔', 'Data Favorite Dari User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
+});
 
 /** Searching */
 app.get('/api/search', (request, response) => {
@@ -587,51 +627,20 @@ app.get('/api/mahasiswa/:nim', (request, response) => {
 });
 app.get('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa`);
-    let mahasiswa = database.mahasiswa;
+    const mahasiswa = database.mahasiswa;
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
-    try {
-        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
-        else if (
-            sortBy == 'id' || sortBy == 'nim' || sortBy == 'email' ||
-            sortBy == 'nama_lengkap' || sortBy == 'created_at' || sortBy == 'updated_at'
-        ) {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if(orderBy == 'asc') mahasiswa.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if(orderBy == 'desc') mahasiswa.sort((a, b) => b[sortBy] - a[sortBy]);
-            else throw 'defaultSortNumberAsc';
+    if(sortBy) {
+        try {
+            mahasiswa.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
+            if(orderBy == 'desc') {
+                mahasiswa.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
+            }
         }
-        else {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if(orderBy == 'asc') {
-                mahasiswa.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else if(orderBy == 'desc') {
-                mahasiswa.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else throw 'defaultSortWordAsc';
-        }
-    }
-    catch (err) {
-        if(err == 'defaultSortNumberAsc') mahasiswa.sort((a, b) => a.id - b.id);
-        if(err == 'defaultSortWordAsc') {
-            try {
-                mahasiswa.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            catch (e) {
-                mahasiswa.sort((a, b) => a.id - b.id);
+        catch (err) {
+            mahasiswa.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
+            if(orderBy == 'desc') {
+                mahasiswa.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
         }
     }
@@ -705,48 +714,17 @@ app.get('/api/ukm', (request, response) => {
     const ukm = database.ukm;
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
-    try {
-        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
-        else if (
-            sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' || sortBy == 'anggota' ||
-            sortBy == 'created_at' || sortBy == 'updated_at'
-        ) {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if(orderBy == 'asc') ukm.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if(orderBy == 'desc') ukm.sort((a, b) => b[sortBy] - a[sortBy]);
-            else throw 'defaultSortNumberAsc';
+    if(sortBy) {
+        try {
+            ukm.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
+            if(orderBy == 'desc') {
+                ukm.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
+            }
         }
-        else {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if(orderBy == 'asc') {
-                ukm.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else if(orderBy == 'desc') {
-                ukm.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else throw 'defaultSortWordAsc';
-        }
-    }
-    catch (err) {
-        if(err == 'defaultSortNumberAsc') ukm.sort((a, b) => a.id - b.id);
-        if(err == 'defaultSortWordAsc') {
-            try {
-                ukm.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            catch (e) {
-                ukm.sort((a, b) => a.id - b.id);
+        catch (err) {
+            ukm.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
+            if(orderBy == 'desc') {
+                ukm.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
         }
     }
@@ -815,48 +793,17 @@ app.get('/api/perpustakaan', (request, response) => {
     const perpustakaan = database.perpustakaan;
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
-    try {
-        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
-        else if (
-            sortBy == 'id' || sortBy == 'isbn' || sortBy == 'judul' || sortBy == 'pengarang' || sortBy == 'penerbit' ||
-            sortBy == 'kategori' || sortBy == 'nama_lengkap' || sortBy == 'created_at' || sortBy == 'updated_at'
-        ) {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if(orderBy == 'asc') perpustakaan.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if(orderBy == 'desc') perpustakaan.sort((a, b) => b[sortBy] - a[sortBy]);
-            else throw 'defaultSortNumberAsc';
+    if(sortBy) {
+        try {
+            perpustakaan.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
+            if(orderBy == 'desc') {
+                perpustakaan.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
+            }
         }
-        else {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if(orderBy == 'asc') {
-                perpustakaan.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else if(orderBy == 'desc') {
-                perpustakaan.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else throw 'defaultSortWordAsc';
-        }
-    }
-    catch (err) {
-        if(err == 'defaultSortNumberAsc') perpustakaan.sort((a, b) => a.id - b.id);
-        if(err == 'defaultSortWordAsc') {
-            try {
-                perpustakaan.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            catch (e) {
-                perpustakaan.sort((a, b) => a.id - b.id);
+        catch (err) {
+            perpustakaan.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
+            if(orderBy == 'desc') {
+                perpustakaan.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
         }
     }
@@ -925,48 +872,17 @@ app.get('/api/fasilitas', (request, response) => {
     const fasilitas = database.fasilitas;
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
-    try {
-        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
-        else if (
-            sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' ||
-            sortBy == 'fakultas' || sortBy == 'created_at' || sortBy == 'updated_at'
-        ) {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if(orderBy == 'asc') fasilitas.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if(orderBy == 'desc') fasilitas.sort((a, b) => b[sortBy] - a[sortBy]);
-            else throw 'defaultSortNumberAsc';
+    if(sortBy) {
+        try {
+            fasilitas.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
+            if(orderBy == 'desc') {
+                fasilitas.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
+            }
         }
-        else {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if(orderBy == 'asc') {
-                fasilitas.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else if(orderBy == 'desc') {
-                fasilitas.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else throw 'defaultSortWordAsc';
-        }
-    }
-    catch (err) {
-        if(err == 'defaultSortNumberAsc') fasilitas.sort((a, b) => a.id - b.id);
-        if(err == 'defaultSortWordAsc') {
-            try {
-                fasilitas.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            catch (e) {
-                fasilitas.sort((a, b) => a.id - b.id);
+        catch (err) {
+            fasilitas.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
+            if(orderBy == 'desc') {
+                fasilitas.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
         }
     }
@@ -1035,48 +951,17 @@ app.get('/api/kantin', (request, response) => {
     const kantin = database.kantin;
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
-    try {
-        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
-        else if (
-            sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' ||
-            sortBy == 'kategori' || sortBy == 'created_at' || sortBy == 'updated_at'
-        ) {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if(orderBy == 'asc') kantin.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if(orderBy == 'desc') kantin.sort((a, b) => b[sortBy] - a[sortBy]);
-            else throw 'defaultSortNumberAsc';
+    if(sortBy) {
+        try {
+            kantin.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
+            if(orderBy == 'desc') {
+                kantin.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
+            }
         }
-        else {
-            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if(orderBy == 'asc') {
-                kantin.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else if(orderBy == 'desc') {
-                kantin.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            else throw 'defaultSortWordAsc';
-        }
-    }
-    catch (err) {
-        if(err == 'defaultSortNumberAsc') kantin.sort((a, b) => a.id - b.id);
-        if(err == 'defaultSortWordAsc') {
-            try {
-                kantin.sort((a, b) => {
-                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
-                    return 0;
-                });
-            }
-            catch (e) {
-                kantin.sort((a, b) => a.id - b.id);
+        catch (err) {
+            kantin.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
+            if(orderBy == 'desc') {
+                kantin.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
         }
     }

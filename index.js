@@ -340,28 +340,29 @@ app.get('/api', (request, response) => {
 /** User Login With (Email/Phone) And Returned JavaScript Web Token */
 app.post('/api/login', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/login => ${JSON.stringify(request.body)}`);
-    const index = database.users.findIndex(u =>
-        (
-            u.user_name == request.body.user_name.toLowerCase() ||
-            u.email == request.body.user_name.toLowerCase() ||
-            u.telepon == request.body.user_name
-        ) &&
-        u.password == request.body.password
-    );
-    if(index >= 0) {
-        const { password, ...user } = database.users[index];
-        const remember_me = ('remember_me' in request.body && JSON.parse(request.body.remember_me) == true);
-        response.json({
-            info: 'Berhasil Login. Yeay! 🤩',
-            token: JwtEncode(user, remember_me)
-        });
+    if ('user_name' in request.body && 'password' in request.body) {
+        const index = database.users.findIndex(u =>
+            (
+                u.user_name == request.body.user_name.toLowerCase() ||
+                u.email == request.body.user_name.toLowerCase() ||
+                u.telepon == request.body.user_name
+            ) &&
+            u.password == request.body.password
+        );
+        if(index >= 0) {
+            const { password, ...user } = database.users[index];
+            const remember_me = ('remember_me' in request.body && JSON.parse(request.body.remember_me) == true);
+            response.json({
+                info: 'Berhasil Login. Yeay! 🤩',
+                token: JwtEncode(user, remember_me)
+            });
+            return;
+        }
     }
-    else {
-        response.status(400).json({
-            info: 'Gagal Login. Hiksz! 😥',
-            message: 'Username/Password Salah~ 🤤'
-        });
-    }
+    response.status(400).json({
+        info: 'Gagal Login. Hiksz! 😥',
+        message: 'Username/Password Salah~ 🤤'
+    });
 });
 
 /** Verify & Get User Data */

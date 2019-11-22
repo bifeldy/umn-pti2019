@@ -40,7 +40,7 @@ function InitializeGoogleAPI() {
 }
 function GenerateNewSessionToGoogleAPI() {
     googleClient.authorize((err, result) => {
-        if (err) {
+        if(err) {
             console.log(err);
             return;
         }
@@ -62,10 +62,10 @@ const host = '0.0.0.0'; // Host On Current IP (Local & Public)
 const port = process.env.PORT || 80;
 
 /** Our App Server */
+app.use(favicon(path.join(__dirname, 'favicon.ico')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
-app.use(favicon(path.join(__dirname, 'favicon.ico')));
 
 /** Our Global Variables Data */
 const jwtAlgorithm = 'HS512';
@@ -177,8 +177,8 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
     let newObjectDetail = {};
     const currentTime = new Date().getTime();
     const tempKey = await LoadGoogleSheetData(object);
-    for (let i=1; i<tempKey.length-2; i++) {
-        if (requestBody[tempKey[i]] == undefined) {
+    for(let i=1; i<tempKey.length-2; i++) {
+        if(requestBody[tempKey[i]] == undefined) {
             return resp.json({
                 info: 'Gagal Menambahkan Data! 🤤',
                 message: 'Data Tidak Lengkap! 😦'
@@ -192,8 +192,8 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
     newObject.created_at = currentTime;
     newObject.updated_at = currentTime;
     const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
-    for (let i=1; i<tempKeyDetail.length-2; i++) {
-        if (requestBody[tempKeyDetail[i]] == undefined) {
+    for(let i=1; i<tempKeyDetail.length-2; i++) {
+        if(requestBody[tempKeyDetail[i]] == undefined) {
             return resp.json({
                 info: 'Gagal Menambahkan Data! 🤤',
                 message: 'Data Tidak Lengkap! 😦'
@@ -225,10 +225,6 @@ function JwtEncode(user, remember_me) {
         expiresIn: remember_me ? (24*60*60) : jwtExpiredIn,
     });
 }
-function JwtDecode(token) {
-    try { return jwt.verify(token, jwtSecretKey); }
-    catch (error) { return error; }
-}
 
 /** Default Response Data NotFound */
 function ResponseJsonDataNotFound(response, info, message) {
@@ -246,7 +242,7 @@ app.get('/', (request, response) => {
     },
     (err, res, body) => {
         let githubResponse = {};
-        if (!err && res.statusCode == 200) {
+        if(!err && res.statusCode == 200) {
             const ghRes = JSON.parse(body);
             githubResponse = {
                 id: ghRes.id,
@@ -299,7 +295,7 @@ app.get('/api', (request, response) => {
     },
     (err, res, body) => {
         let githubCommitsResponse = [];
-        if (!err && res.statusCode == 200) {
+        if(!err && res.statusCode == 200) {
             githubCommitsResponse = JSON.parse(body);
             delete githubCommitsResponse[0].author;
             delete githubCommitsResponse[0].committer;
@@ -312,9 +308,9 @@ app.get('/api', (request, response) => {
         },
         (err, res, body) => {
             let githubContributorsResponse = [];
-            if (!err && res.statusCode == 200) {
+            if(!err && res.statusCode == 200) {
                 githubContributorsResponse = JSON.parse(body);
-                for (let i=0; i<githubContributorsResponse.length; i++) {
+                for(let i=0; i<githubContributorsResponse.length; i++) {
                     delete githubContributorsResponse[i].gravatar_id;
                     delete githubContributorsResponse[i].followers_url;
                     delete githubContributorsResponse[i].following_url;
@@ -352,11 +348,11 @@ app.post('/api/login', (request, response) => {
         ) &&
         u.password == request.body.password
     );
-    if (index >= 0) {
+    if(index >= 0) {
         const { password, ...user } = database.users[index];
         let remember_me = false
-        if ('remember_me' in request.body) {
-            if (JSON.parse(request.body.remember_me) == true) {
+        if('remember_me' in request.body) {
+            if(JSON.parse(request.body.remember_me) == true) {
                 remember_me = true
             }
         }
@@ -376,12 +372,21 @@ app.post('/api/login', (request, response) => {
 /** Verify & Get User Data */
 app.post('/api/verify', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/verify => ${JSON.stringify(request.body)}`);
-    let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-    if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
-    response.json({
-        info: 'User Selesai Di Verifikasi! UwUu~ 😚',
-        result: JwtDecode(token)
-    });
+    try {
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
+        response.json({
+            info: 'User Selesai Di Verifikasi! UwUu~ 😚',
+            result: decoded
+        });
+    }
+    catch(error) {
+        response.status(401).json({
+            info: 'User Gagal Di Verifikasi! Hikz~ 🤨',
+            result: error
+        });
+    }
 });
 
 /** Register */
@@ -399,25 +404,25 @@ app.post('/api/register', (request, response) => {
     ) {
         newUserData.telepon = newUserData.telepon.replace(/[^0-9]+/g, '');
         newUserData.user_name = newUserData.user_name.replace(/[^0-9a-zA-Z]+/g, '');
-        if (newUserData.telepon != '' && newUserData.user_name != '') {
+        if(newUserData.telepon != '' && newUserData.user_name != '') {
             const iUserName = database.users.findIndex(u => u.user_name == newUserData.user_name.toLowerCase());
             const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
             const iEmail = database.users.findIndex(u => u.email == newUserData.email.toLowerCase());
             const index = Math.max(iUserName, iEmail, iPhone);
-            if (index >= 0) {
+            if(index >= 0) {
                 let result = {};
-                if (iUserName >= 0) result.user_name = 'Username Sudah Terpakai! 😭';
-                if (iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
-                if (iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
+                if(iUserName >= 0) result.user_name = 'Username Sudah Terpakai! 😭';
+                if(iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
+                if(iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
                 response.json({
                     info: 'Gagal Mendaftarkan User Baru! T_T 😪',
                     result
                 });
             }
-            else if (newUserData.password.length >= 128) {
+            else if(newUserData.password.length >= 128) {
                 const currentTime = new Date().getTime();
                 newUserData.id = database.users.length + 1;
-                if (!('foto' in newUserData)) newUserData.foto = 'https://via.placeholder.com/966x935';
+                if(!('foto' in newUserData)) newUserData.foto = 'https://via.placeholder.com/966x935';
                 newUserData.created_at = currentTime;
                 newUserData.updated_at = currentTime;
                 const newUser = {
@@ -458,14 +463,14 @@ app.post('/api/register', (request, response) => {
 
 /** User Profile */
 app.get('/api/user/:user_name', (request, response) => {
-    if ('user_name' in request.params) {
+    if('user_name' in request.params) {
         const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
-        if (parameter != '') {
+        if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/user/${parameter}`);
             const index = database.users.findIndex(u => u.user_name == parameter);
             const user = {...database.users[index]};
             delete user.password;
-            if (index >= 0) {
+            if(index >= 0) {
                 response.json({
                     info: 'Data Profile User 🤔',
                     result: user
@@ -480,10 +485,10 @@ app.post('/api/update', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/update => ${JSON.stringify(request.body)}`);
     try {
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
         const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        if (index >= 0) {
+        if(index >= 0) {
             if (
                 (
                     !('nama_lengkap' in request.body) && !('alamat' in request.body) &&
@@ -503,8 +508,8 @@ app.post('/api/update', (request, response) => {
             }
             else {
                 const currentTime = new Date().getTime();
-                if ('password' in request.body) {
-                    if (newUserData.password.length >= 128) {
+                if('password' in request.body) {
+                    if(newUserData.password.length >= 128) {
                         database.users[index].password = request.body.password;
                     }
                     else {
@@ -515,10 +520,10 @@ app.post('/api/update', (request, response) => {
                         return;
                     }
                 }
-                if ('nama_lengkap' in request.body) database.users[index].nama_lengkap = request.body.nama_lengkap;
-                if ('alamat' in request.body) database.users[index].alamat = request.body.alamat;
-                if ('tanggal_lahir' in request.body) database.users[index].tanggal_lahir = request.body.tanggal_lahir;
-                if ('foto' in request.body) database.users[index].foto = request.body.foto;
+                if('nama_lengkap' in request.body) database.users[index].nama_lengkap = request.body.nama_lengkap;
+                if('alamat' in request.body) database.users[index].alamat = request.body.alamat;
+                if('tanggal_lahir' in request.body) database.users[index].tanggal_lahir = request.body.tanggal_lahir;
+                if('foto' in request.body) database.users[index].foto = request.body.foto;
                 database.users[index].updated_at = currentTime;
                 WriteUpdateGoogleSheetData('users', {...database.users[index]});
                 response.json({
@@ -557,12 +562,12 @@ app.get('/api/search', (request, response) => {
 
 /** Mahasiswa -- Daftar Mahasiswa */
 app.get('/api/mahasiswa/:nim', (request, response) => {
-    if ('nim' in request.params) {
+    if('nim' in request.params) {
         const parameter = request.params.nim.replace(/[^0-9]+/g, '');
-        if (parameter != '') {
+        if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/mahasiswa/${parameter}`);
             const index = database.mahasiswa.findIndex(u => u.nim == parameter);
-            if (index >= 0) {
+            if(index >= 0) {
                 response.json({
                     info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
                     result: {
@@ -582,29 +587,29 @@ app.get('/api/mahasiswa', (request, response) => {
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
     try {
-        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
             sortBy == 'id' || sortBy == 'nim' || sortBy == 'email' ||
             sortBy == 'nama_lengkap' || sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if (orderBy == 'asc') mahasiswa.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if (orderBy == 'desc') mahasiswa.sort((a, b) => b[sortBy] - a[sortBy]);
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if(orderBy == 'asc') mahasiswa.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if(orderBy == 'desc') mahasiswa.sort((a, b) => b[sortBy] - a[sortBy]);
             else throw 'defaultSortNumberAsc';
         }
         else {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if (orderBy == 'asc') {
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if(orderBy == 'asc') {
                 mahasiswa.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
-            else if (orderBy == 'desc') {
+            else if(orderBy == 'desc') {
                 mahasiswa.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -612,12 +617,12 @@ app.get('/api/mahasiswa', (request, response) => {
         }
     }
     catch (err) {
-        if (err == 'defaultSortNumberAsc') mahasiswa.sort((a, b) => a.id - b.id);
-        if (err == 'defaultSortWordAsc') {
+        if(err == 'defaultSortNumberAsc') mahasiswa.sort((a, b) => a.id - b.id);
+        if(err == 'defaultSortWordAsc') {
             try {
                 mahasiswa.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -638,19 +643,19 @@ app.post('/api/mahasiswa', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/mahasiswa => ${JSON.stringify(request.body)}`);
     try { 
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
         const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        if (index >= 0) {
+        if(index >= 0) {
             const iNim = database.mahasiswa.findIndex(mhs => mhs.nim == request.body.nim);
             const iEmail = database.mahasiswa.findIndex(mhs => mhs.email == request.body.email);
             const iPhone = database.mahasiswaDetail.findIndex(mhs => mhs.telepon == request.body.telepon);
             const idx = Math.max(iNim, iEmail, iPhone);
-            if (idx >= 0) {
+            if(idx >= 0) {
                 let result = {};
-                if (iNim >= 0) result.nim = 'NIM Sudah Terpakai! 😭';
-                if (iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
-                if (iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
+                if(iNim >= 0) result.nim = 'NIM Sudah Terpakai! 😭';
+                if(iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
+                if(iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
                 response.json({
                     info: 'Gagal Menambah Mahasiswa! 🤧 Data Sudah Ada! 😗',
                     result
@@ -672,12 +677,12 @@ app.post('/api/mahasiswa', (request, response) => {
 
 /** UKM -- Unit Kegiatan Mahasiswa */
 app.get('/api/ukm/:kode', (request, response) => {
-    if ('kode' in request.params) {
+    if('kode' in request.params) {
         const parameter = request.params.kode.replace(/[^0-9a-zA-Z]+/g, '');
-        if (parameter != '') {
+        if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/ukm/${parameter}`);
             const index = database.ukm.findIndex(u => u.kode == parameter);
-            if (index >= 0) {
+            if(index >= 0) {
                 response.json({
                     info: 'Ekstrakurikuler Mahasiswa Univ. Multimedia Nusantara 🤔',
                     result: {
@@ -697,29 +702,29 @@ app.get('/api/ukm', (request, response) => {
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
     try {
-        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
             sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' || sortBy == 'anggota' ||
             sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if (orderBy == 'asc') ukm.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if (orderBy == 'desc') ukm.sort((a, b) => b[sortBy] - a[sortBy]);
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if(orderBy == 'asc') ukm.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if(orderBy == 'desc') ukm.sort((a, b) => b[sortBy] - a[sortBy]);
             else throw 'defaultSortNumberAsc';
         }
         else {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if (orderBy == 'asc') {
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if(orderBy == 'asc') {
                 ukm.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
-            else if (orderBy == 'desc') {
+            else if(orderBy == 'desc') {
                 ukm.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -727,12 +732,12 @@ app.get('/api/ukm', (request, response) => {
         }
     }
     catch (err) {
-        if (err == 'defaultSortNumberAsc') ukm.sort((a, b) => a.id - b.id);
-        if (err == 'defaultSortWordAsc') {
+        if(err == 'defaultSortNumberAsc') ukm.sort((a, b) => a.id - b.id);
+        if(err == 'defaultSortWordAsc') {
             try {
                 ukm.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -753,14 +758,14 @@ app.post('/api/ukm', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/ukm => ${JSON.stringify(request.body)}`);
     try { 
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
         const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        if (index >= 0) {
+        if(index >= 0) {
             const iKode = database.ukm.findIndex(uk => uk.kode == request.body.kode);
-            if (iKode >= 0) {
+            if(iKode >= 0) {
                 let result = {};
-                if (iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
+                if(iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
                 response.json({
                     info: 'Gagal Menambah Ekstrakurikuler! 🤧 Data Sudah Ada! 😗',
                     result
@@ -782,12 +787,12 @@ app.post('/api/ukm', (request, response) => {
 
 /** Perpustakaan -- Buku, Jurnal & Skripsi */
 app.get('/api/perpustakaan/:isbn', (request, response) => {
-    if ('isbn' in request.params) {
+    if('isbn' in request.params) {
         const parameter = request.params.isbn.replace(/[^0-9]+/g, '');
-        if (parameter != '') {
+        if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/perpustakaan/${parameter}`);
             const index = database.perpustakaan.findIndex(u => u.isbn == parseInt(parameter));
-            if (index >= 0) {
+            if(index >= 0) {
                 response.json({
                     info: 'Pustaka Univ. Multimedia Nusantara 🤔',
                     result: {
@@ -807,29 +812,29 @@ app.get('/api/perpustakaan', (request, response) => {
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
     try {
-        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
             sortBy == 'id' || sortBy == 'isbn' || sortBy == 'judul' || sortBy == 'pengarang' || sortBy == 'penerbit' ||
             sortBy == 'kategori' || sortBy == 'nama_lengkap' || sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if (orderBy == 'asc') perpustakaan.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if (orderBy == 'desc') perpustakaan.sort((a, b) => b[sortBy] - a[sortBy]);
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if(orderBy == 'asc') perpustakaan.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if(orderBy == 'desc') perpustakaan.sort((a, b) => b[sortBy] - a[sortBy]);
             else throw 'defaultSortNumberAsc';
         }
         else {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if (orderBy == 'asc') {
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if(orderBy == 'asc') {
                 perpustakaan.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
-            else if (orderBy == 'desc') {
+            else if(orderBy == 'desc') {
                 perpustakaan.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -837,12 +842,12 @@ app.get('/api/perpustakaan', (request, response) => {
         }
     }
     catch (err) {
-        if (err == 'defaultSortNumberAsc') perpustakaan.sort((a, b) => a.id - b.id);
-        if (err == 'defaultSortWordAsc') {
+        if(err == 'defaultSortNumberAsc') perpustakaan.sort((a, b) => a.id - b.id);
+        if(err == 'defaultSortWordAsc') {
             try {
                 perpustakaan.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -863,14 +868,14 @@ app.post('/api/perpustakaan', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/perpustakaan => ${JSON.stringify(request.body)}`);
     try { 
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
         const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        if (index >= 0) {
+        if(index >= 0) {
             const iIsbn = database.perpustakaan.findIndex(pstk => pstk.isbn == request.body.isbn);
-            if (iIsbn >= 0) {
+            if(iIsbn >= 0) {
                 let result = {};
-                if (iIsbn >= 0) result.kode = 'ISBN Sudah Terpakai! 😭';
+                if(iIsbn >= 0) result.kode = 'ISBN Sudah Terpakai! 😭';
                 response.json({
                     info: 'Gagal Menambah Pustaka! 🤧 Data Sudah Ada! 😗',
                     result
@@ -892,12 +897,12 @@ app.post('/api/perpustakaan', (request, response) => {
 
 /** Fasilitas -- Ruangan & Barang Perlengkapan */
 app.get('/api/fasilitas/:kode', (request, response) => {
-    if ('kode' in request.params) {
+    if('kode' in request.params) {
         const parameter = request.params.kode.replace(/[^0-9a-zA-Z]+/g, '');
-        if (parameter != '') {
+        if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/fasilitas/${parameter}`);
             const index = database.fasilitas.findIndex(f => f.kode == parameter);
-            if (index >= 0) {
+            if(index >= 0) {
                 response.json({
                     info: 'Fasilitas Univ. Multimedia Nusantara 🤔',
                     result: {
@@ -917,29 +922,29 @@ app.get('/api/fasilitas', (request, response) => {
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
     try {
-        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
             sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' ||
             sortBy == 'fakultas' || sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if (orderBy == 'asc') fasilitas.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if (orderBy == 'desc') fasilitas.sort((a, b) => b[sortBy] - a[sortBy]);
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if(orderBy == 'asc') fasilitas.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if(orderBy == 'desc') fasilitas.sort((a, b) => b[sortBy] - a[sortBy]);
             else throw 'defaultSortNumberAsc';
         }
         else {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if (orderBy == 'asc') {
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if(orderBy == 'asc') {
                 fasilitas.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
-            else if (orderBy == 'desc') {
+            else if(orderBy == 'desc') {
                 fasilitas.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -947,12 +952,12 @@ app.get('/api/fasilitas', (request, response) => {
         }
     }
     catch (err) {
-        if (err == 'defaultSortNumberAsc') fasilitas.sort((a, b) => a.id - b.id);
-        if (err == 'defaultSortWordAsc') {
+        if(err == 'defaultSortNumberAsc') fasilitas.sort((a, b) => a.id - b.id);
+        if(err == 'defaultSortWordAsc') {
             try {
                 fasilitas.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -973,14 +978,14 @@ app.post('/api/fasilitas', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/fasilitas => ${JSON.stringify(request.body)}`);
     try { 
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
         const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        if (index >= 0) {
+        if(index >= 0) {
             const iKode = database.fasilitas.findIndex(fs => fs.kode == request.body.kode);
-            if (iKode >= 0) {
+            if(iKode >= 0) {
                 let result = {};
-                if (iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
+                if(iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
                 response.json({
                     info: 'Gagal Menambah Fasilitas! 🤧 Data Sudah Ada! 😗',
                     result
@@ -1002,12 +1007,12 @@ app.post('/api/fasilitas', (request, response) => {
 
 /** Kantin -- Barang Dagangan */
 app.get('/api/kantin/:kode', (request, response) => {
-    if ('kode' in request.params) {
+    if('kode' in request.params) {
         const parameter = request.params.kode.replace(/[^0-9a-zA-Z]+/g, '');
-        if (parameter != '') {
+        if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/kantin/${parameter}`);
             const index = database.kantin.findIndex(k => k.kode == parameter);
-            if (index >= 0) {
+            if(index >= 0) {
                 response.json({
                     info: 'Jajanan Univ. Multimedia Nusantara 🤔',
                     result: {
@@ -1027,29 +1032,29 @@ app.get('/api/kantin', (request, response) => {
     const sortBy = request.query['sort'];
     const orderBy = request.query['order'];
     try {
-        if (sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
+        if(sortBy == undefined || sortBy == '') throw 'defaultSortNumberAsc';
         else if (
             sortBy == 'id' || sortBy == 'kode' || sortBy == 'nama' ||
             sortBy == 'kategori' || sortBy == 'created_at' || sortBy == 'updated_at'
         ) {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
-            else if (orderBy == 'asc') kantin.sort((a, b) => a[sortBy] - b[sortBy]);
-            else if (orderBy == 'desc') kantin.sort((a, b) => b[sortBy] - a[sortBy]);
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortNumberAsc';
+            else if(orderBy == 'asc') kantin.sort((a, b) => a[sortBy] - b[sortBy]);
+            else if(orderBy == 'desc') kantin.sort((a, b) => b[sortBy] - a[sortBy]);
             else throw 'defaultSortNumberAsc';
         }
         else {
-            if (orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
-            else if (orderBy == 'asc') {
+            if(orderBy == undefined || orderBy == '') throw 'defaultSortWordAsc';
+            else if(orderBy == 'asc') {
                 kantin.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
-            else if (orderBy == 'desc') {
+            else if(orderBy == 'desc') {
                 kantin.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -1057,12 +1062,12 @@ app.get('/api/kantin', (request, response) => {
         }
     }
     catch (err) {
-        if (err == 'defaultSortNumberAsc') kantin.sort((a, b) => a.id - b.id);
-        if (err == 'defaultSortWordAsc') {
+        if(err == 'defaultSortNumberAsc') kantin.sort((a, b) => a.id - b.id);
+        if(err == 'defaultSortWordAsc') {
             try {
                 kantin.sort((a, b) => {
-                    if (a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
-                    if (a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
+                    if(a[sortBy].toUpperCase() < b[sortBy].toUpperCase()) return -1;
+                    if(a[sortBy].toUpperCase() > b[sortBy].toUpperCase()) return 1;
                     return 0;
                 });
             }
@@ -1083,14 +1088,14 @@ app.post('/api/kantin', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/kantin => ${JSON.stringify(request.body)}`);
     try { 
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-        if (token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
         const decoded = jwt.verify(token, jwtSecretKey);
         const index = database.users.findIndex(u => u.id == decoded.user.id);
-        if (index >= 0) {
+        if(index >= 0) {
             const iKode = database.kantin.findIndex(kn => kn.kode == request.body.kode);
-            if (iKode >= 0) {
+            if(iKode >= 0) {
                 let result = {};
-                if (iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
+                if(iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
                 response.json({
                     info: 'Gagal Menambah Kantin! 🤧 Data Sudah Ada! 😗',
                     result

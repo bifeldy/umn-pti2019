@@ -179,7 +179,7 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
     const tempKey = await LoadGoogleSheetData(object);
     for(let i=1; i<tempKey.length-2; i++) {
         if(requestBody[tempKey[i]] == undefined) {
-            return resp.json({
+            return resp.status(400).json({
                 info: 'Gagal Menambahkan Data! 🤤',
                 message: 'Data Tidak Lengkap! 😦'
             });
@@ -194,7 +194,7 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
     const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
     for(let i=1; i<tempKeyDetail.length-2; i++) {
         if(requestBody[tempKeyDetail[i]] == undefined) {
-            return resp.json({
+            return resp.status(400).json({
                 info: 'Gagal Menambahkan Data! 🤤',
                 message: 'Data Tidak Lengkap! 😦'
             });
@@ -357,7 +357,7 @@ app.post('/api/login', (request, response) => {
         });
     }
     else {
-        response.json({
+        response.status(400).json({
             info: 'Gagal Login. Hiksz! 😥',
             message: 'Username/Password Salah~ 🤤'
         });
@@ -409,7 +409,7 @@ app.post('/api/register', (request, response) => {
                 if(iUserName >= 0) result.user_name = 'Username Sudah Terpakai! 😭';
                 if(iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
                 if(iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
-                response.json({
+                response.status(400).json({
                     info: 'Gagal Mendaftarkan User Baru! T_T 😪',
                     result
                 });
@@ -442,7 +442,7 @@ app.post('/api/register', (request, response) => {
                 });
             }
             else {
-                response.json({
+                response.status(400).json({
                     info: 'Gagal Mendaftarkan User Baru! T_T 😪',
                     message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
                 });
@@ -450,7 +450,7 @@ app.post('/api/register', (request, response) => {
             return;
         }
     }
-    response.json({
+    response.status(400).json({
         info: 'Gagal Mendaftarkan User Baru! T_T 😒',
         message: 'Data Pendaftar Tidak Lengkap! 😦'
     });
@@ -508,7 +508,7 @@ app.post('/api/update', (request, response) => {
                         database.users[index].password = request.body.password;
                     }
                     else {
-                        response.json({
+                        response.status(400).json({
                             info: 'Gagal Memperbaharui Data Profil! 🤧',
                             message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
                         });
@@ -528,7 +528,7 @@ app.post('/api/update', (request, response) => {
             }
         }
         else {
-            response.json({
+            response.status(400).json({
                 info: 'Gagal Memperbaharui Data Profil! 🤐 User Tidak Ada! 😑',
                 result: error
             });
@@ -651,7 +651,7 @@ app.post('/api/mahasiswa', (request, response) => {
                 if(iNim >= 0) result.nim = 'NIM Sudah Terpakai! 😭';
                 if(iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
                 if(iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
-                response.json({
+                response.status(400).json({
                     info: 'Gagal Menambah Mahasiswa! 🤧 Data Sudah Ada! 😗',
                     result
                 });
@@ -761,7 +761,7 @@ app.post('/api/ukm', (request, response) => {
             if(iKode >= 0) {
                 let result = {};
                 if(iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
-                response.json({
+                response.status(400).json({
                     info: 'Gagal Menambah Ekstrakurikuler! 🤧 Data Sudah Ada! 😗',
                     result
                 });
@@ -871,7 +871,7 @@ app.post('/api/perpustakaan', (request, response) => {
             if(iIsbn >= 0) {
                 let result = {};
                 if(iIsbn >= 0) result.kode = 'ISBN Sudah Terpakai! 😭';
-                response.json({
+                response.status(400).json({
                     info: 'Gagal Menambah Pustaka! 🤧 Data Sudah Ada! 😗',
                     result
                 });
@@ -981,7 +981,7 @@ app.post('/api/fasilitas', (request, response) => {
             if(iKode >= 0) {
                 let result = {};
                 if(iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
-                response.json({
+                response.status(400).json({
                     info: 'Gagal Menambah Fasilitas! 🤧 Data Sudah Ada! 😗',
                     result
                 });
@@ -1091,7 +1091,7 @@ app.post('/api/kantin', (request, response) => {
             if(iKode >= 0) {
                 let result = {};
                 if(iKode >= 0) result.kode = 'Kode Sudah Terpakai! 😭';
-                response.json({
+                response.status(400).json({
                     info: 'Gagal Menambah Kantin! 🤧 Data Sudah Ada! 😗',
                     result
                 });

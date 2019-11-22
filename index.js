@@ -561,7 +561,7 @@ app.get('/api/mahasiswa/:nim', (request, response) => {
         const parameter = request.params.nim.replace(/[^0-9]+/g, '');
         if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/mahasiswa/${parameter}`);
-            const index = database.mahasiswa.findIndex(u => u.nim == parameter);
+            const index = database.mahasiswa.findIndex(u => u.nim == parseInt(parameter));
             if(index >= 0) {
                 response.json({
                     info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',

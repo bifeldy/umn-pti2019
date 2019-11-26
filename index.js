@@ -244,7 +244,7 @@ function ResponseJsonDataNotFound(response, info, message) {
 /** Home Page */
 app.get('/', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /`);
-    response.sendFile('./Information.png');
+    response.sendfile('./Information.png');
 //     externalRequest({
 //         url: appRepository,
 //         headers: {

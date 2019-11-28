@@ -244,10 +244,10 @@ function ResponseJsonDataNotFound(response, info, message) {
 }
 
 /** Home Page */
-app.get('/', (request, response) => {
-    console.log(`${request.connection.remoteAddress} => /`);
-    response.sendfile('./Information.png');
-});
+// app.get('/', (request, response) => {
+//     console.log(`${request.connection.remoteAddress} => /`);
+//     response.sendfile('./Information.png');
+// });
 
 /** API Page */
 app.get('/api', (request, response) => {

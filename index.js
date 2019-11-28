@@ -173,12 +173,12 @@ async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) 
         RefreshGoogleSheetData();
     }).catch(err => console.log(err));
 }
-async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, startColumn = 1) {
+async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, startColumn = 1, endColumnBefore = 2) {
     GenerateNewSessionToGoogleAPI();
     const currentTime = new Date().getTime();
     let newObject = {};
     const tempKey = await LoadGoogleSheetData(object);
-    for(let i=startColumn; i<tempKey.length-2; i++) {
+    for(let i=startColumn; i<tempKey.length-endColumnBefore; i++) {
         if (
             requestBody[tempKey[i]] == undefined ||
             requestBody[tempKey[i]] == null ||
@@ -199,7 +199,7 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
     if(objectDetail != null) {
         let newObjectDetail = {};
         const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
-        for(let i=startColumn; i<tempKeyDetail.length-2; i++) {
+        for(let i=startColumn; i<tempKeyDetail.length-endColumnBefore; i++) {
             if (
                 requestBody[tempKeyDetail[i]] == undefined ||
                 requestBody[tempKeyDetail[i]] == null ||
@@ -514,7 +514,13 @@ app.get('/api/user/:user_name/favorites', (request, response) => {
             console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/favorites`);
             const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
             if(index >= 0) {
-                let favorites = database.userFavorites.filter(fav => fav.user_name == database.users[index].user_name);
+                let tempFavorites = database.userFavorites.filter(fav => (fav.user_name == database.users[index].user_name && fav.deleted == "FALSE"));
+                let favorites = [];
+                for (let i=0; i<tempFavorites.length; i++) {
+                    const temp = {...tempFavorites[i]};
+                    delete temp.deleted;
+                    favorites.push(temp);
+                }
                 const typeBy = request.query['type'];
                 if(typeBy) {
                     favorites = favorites.filter(fv => fv.type == typeBy);
@@ -561,7 +567,8 @@ app.post('/api/user/:user_name/add-favorites', (request, response) => {
                         const iFav = database.userFavorites.findIndex(fav => (
                             fav.user_name == database.users[userIndex].user_name &&
                             fav.type == request.body.type &&
-                            fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited
+                            fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
+                            fav.deleted == "FALSE"
                         ));
                         if(iFav >= 0) {
                             response.status(400).json({
@@ -579,7 +586,8 @@ app.post('/api/user/:user_name/add-favorites', (request, response) => {
                             if (typeIdx >= 0) {
                                 const newFav = {...request.body};
                                 newFav.user_name = database.users[userIndex].user_name;
-                                AddNewDataToGoogleSheet('userFavorites', null, {...newFav}, response, 0);
+                                newFav.deleted = "FALSE";
+                                AddNewDataToGoogleSheet('userFavorites', null, newFav, response, 1, 1);
                                 return;
                             }
                             else {
@@ -630,15 +638,22 @@ app.post('/api/user/:user_name/delete-favorites', (request, response) => {
                         const iFav = database.userFavorites.findIndex(fav => (
                             fav.user_name == database.users[userIndex].user_name &&
                             fav.type == request.body.type &&
-                            fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited
+                            fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
+                            fav.deleted == "FALSE"
                         ));
                         if(iFav >= 0) {
-                            // Delete Row
+                            database.userFavorites[iFav].deleted = "TRUE";
+                            WriteUpdateGoogleSheetData('userFavorites', {...database.userFavorites[iFav]});
+                            response.json({
+                                info: 'Berhasil Menghapus Favorite! 😝',
+                                token: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Behasil Di Hapus Dari Favorite 🤔`
+                            });
+                            return;
                         }
                         else {
                             response.status(400).json({
-                                info: 'Gagal Menambah Favorite! 🤧 Data Sudah Ada! 😗',
-                                message: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Sudah Menjadi Favorit ${database.users[userIndex].user_name} 😪`
+                                info: 'Gagal Menambah Favorite! 🤧 Data Tidak Ada! 😗',
+                                message: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Belum Menjadi Favorit ${database.users[userIndex].user_name} 😪`
                             });
                             return;
                         }

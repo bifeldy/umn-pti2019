@@ -175,9 +175,8 @@ async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) 
 }
 async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) {
     GenerateNewSessionToGoogleAPI();
-    let newObject = {};
-    let newObjectDetail = {};
     const currentTime = new Date().getTime();
+    let newObject = {};
     const tempKey = await LoadGoogleSheetData(object);
     for(let i=1; i<tempKey.length-2; i++) {
         if (
@@ -197,31 +196,34 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
     newObject.id = database[object].length + 1;
     newObject.created_at = currentTime;
     newObject.updated_at = currentTime;
-    const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
-    for(let i=1; i<tempKeyDetail.length-2; i++) {
-        if (
-            requestBody[tempKeyDetail[i]] == undefined ||
-            requestBody[tempKeyDetail[i]] == null ||
-            requestBody[tempKeyDetail[i]] == ''
-        ) {
-            return resp.status(400).json({
-                info: 'Gagal Menambahkan Data! 🤤',
-                message: 'Data Tidak Lengkap! 😦'
-            });
-        }
-    }
-    tempKeyDetail.forEach(key => {
-        newObjectDetail[key] = requestBody[key];
-    });
-    newObjectDetail.id = database[objectDetail].length + 1;
-    newObjectDetail.created_at = currentTime;
-    newObjectDetail.updated_at = currentTime;
     await WriteAppendGoogleSheetData(object, {...newObject});
-    await WriteAppendGoogleSheetData(objectDetail, {...newObjectDetail});
+    if(objectDetail != null) {
+        let newObjectDetail = {};
+        const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
+        for(let i=1; i<tempKeyDetail.length-2; i++) {
+            if (
+                requestBody[tempKeyDetail[i]] == undefined ||
+                requestBody[tempKeyDetail[i]] == null ||
+                requestBody[tempKeyDetail[i]] == ''
+            ) {
+                return resp.status(400).json({
+                    info: 'Gagal Menambahkan Data! 🤤',
+                    message: 'Data Tidak Lengkap! 😦'
+                });
+            }
+        }
+        tempKeyDetail.forEach(key => {
+            newObjectDetail[key] = requestBody[key];
+        });
+        newObjectDetail.id = database[objectDetail].length + 1;
+        newObjectDetail.created_at = currentTime;
+        newObjectDetail.updated_at = currentTime;
+        await WriteAppendGoogleSheetData(objectDetail, {...newObjectDetail});
+    }
     await RefreshGoogleSheetData();
     resp.json({
         info: 'Berhasil Menambahkan Data! ^_^.~ 😁',
-        result: {...newObject, ...newObjectDetail}
+        result: (objectDetail != null ? {...newObject, ...newObjectDetail} : {...newObject})
     });
 }
 
@@ -245,54 +247,6 @@ function ResponseJsonDataNotFound(response, info, message) {
 app.get('/', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /`);
     response.sendfile('./Information.png');
-//     externalRequest({
-//         url: appRepository,
-//         headers: {
-//             'User-Agent': 'request'
-//         }
-//     },
-//     (err, res, body) => {
-//         let githubResponse = {};
-//         if(!err && res.statusCode == 200) {
-//             const ghRes = JSON.parse(body);
-//             githubResponse = {
-//                 id: ghRes.id,
-//                 node_id:  ghRes.node_id,
-//                 name:  ghRes.name,
-//                 html_url: ghRes.html_url,
-//                 owner: {
-//                     login: ghRes.owner.login,
-//                     id: ghRes.owner.id,
-//                     node_id: ghRes.owner.node_id,
-//                     avatar_url: ghRes.owner.avatar_url,
-//                     html_url: ghRes.owner.html_url,
-//                 },
-//                 license: {
-//                     key: ghRes.license.key,
-//                     name: ghRes.license.name,
-//                     spdx_id: ghRes.license.spdx_id,
-//                     url: ghRes.license.url,
-//                     node_id: ghRes.license.node_id
-//                 },
-//                 size: ghRes.size,
-//                 open_issues_count: ghRes.open_issues_count,
-//                 stargazers_count: ghRes.stargazers_count,
-//                 watchers_count: ghRes.watchers_count,
-//                 default_branch: ghRes.default_branch,
-//                 language: ghRes.language,
-//                 created_at: ghRes.created_at,
-//                 updated_at: ghRes.updated_at,
-//                 pushed_at: ghRes.pushed_at,
-//             };
-//         }
-//         response.json({
-//             message: `Selamat Datang Di ${appName}! 😍`,
-//             description: appDescription,
-//             version: appVersion,
-//             developers: appDev,
-//             github: githubResponse
-//         });
-//     });
 });
 
 /** API Page */
@@ -590,6 +544,75 @@ app.get('/api/user/:user_name/favorites', (request, response) => {
         }
     }
     ResponseJsonDataNotFound(response, 'Data Favorite User 🤔', 'Data Favorite Dari User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
+});
+app.post('/api/user/:user_name/add-favorites', (request, response) => {
+    if('user_name' in request.params) {
+        const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
+        if(parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/add-favorites`);
+            const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
+            if(index >= 0) {
+                try {
+                    let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+                    if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
+                    const decoded = jwt.verify(token, jwtSecretKey);
+                    const userIndex = database.users.findIndex(u => u.id == decoded.user.id);
+                    if(userIndex >= 0 && userIndex == index) {
+                        const iFav = database.userFavorites.findIndex(fav => (
+                            fav.user_name == database.users[userIndex].user_name &&
+                            fav.type == request.body.type &&
+                            fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited
+                        ));
+                        if(iFav >= 0) {
+                            response.status(400).json({
+                                info: 'Gagal Menambah Favorite! 🤧 Data Sudah Ada! 😗',
+                                message: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Sudah Menjadi Favorit ${database.users[userIndex].user_name} 😪`
+                            });
+                            return;
+                        }
+                        if (request.body.type in database) {
+                            const typeIdx = database[request.body.type].findIndex(i => (
+                                i.kode == request.body.id_kode_nim_isbn_favorited ||
+                                i.isbn == request.body.id_kode_nim_isbn_favorited ||
+                                i.nim == request.body.id_kode_nim_isbn_favorited
+                            ));
+                            if (typeIdx >= 0) {
+                                const newFav = {...request.body};
+                                newFav.user_name = database.users[userIndex].user_name;
+                                AddNewDataToGoogleSheet('userFavorites', null, {...newFav}, response);
+                                return;
+                            }
+                            else {
+                                response.status(400).json({
+                                    info: 'Gagal Menambah Favorite! 🤧 Kode Nomor Id Tidak Sesuai! 😗',
+                                    message: `Data ${request.body.id_kode_nim_isbn_favorited} Tidak Ada Dalam ${request.body.type} 😪`
+                                });
+                                return;
+                            }
+                        }
+                        else {
+                            response.status(400).json({
+                                info: 'Gagal Menambah Favorite! 🤧 Type Tidak Sesuai! 😗',
+                                message: `Data Type ${request.body.type} Tidak Ada 😪`
+                            });
+                            return;
+                        }
+                    }
+                    else {
+                        throw 'Akses Ditolak! 😯';
+                    }
+                }
+                catch (e) {
+                    response.status(400).json({
+                        info: 'Whoops! Terjadi Kesalahan 🤔',
+                        result: e
+                    });
+                    return;
+                }
+            }
+        }
+    }
+    ResponseJsonDataNotFound(response, 'Data Favorite User 🤔', 'User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
 
 /** Searching */

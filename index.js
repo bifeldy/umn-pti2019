@@ -173,12 +173,12 @@ async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) 
         RefreshGoogleSheetData();
     }).catch(err => console.log(err));
 }
-async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) {
+async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, startColumn = 1) {
     GenerateNewSessionToGoogleAPI();
     const currentTime = new Date().getTime();
     let newObject = {};
     const tempKey = await LoadGoogleSheetData(object);
-    for(let i=1; i<tempKey.length-2; i++) {
+    for(let i=startColumn; i<tempKey.length-2; i++) {
         if (
             requestBody[tempKey[i]] == undefined ||
             requestBody[tempKey[i]] == null ||
@@ -186,21 +186,20 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
         ) {
             return resp.status(400).json({
                 info: 'Gagal Menambahkan Data! 🤤',
-                message: 'Data Tidak Lengkap! 😦'
+                message: 'Data Utama Tidak Lengkap! 😦'
             });
         }
     }
     tempKey.forEach(key => {
         newObject[key] = requestBody[key];
     });
-    newObject.id = database[object].length + 1;
+    if(startColumn == 1) newObject.id = database[object].length + 1;
     newObject.created_at = currentTime;
     newObject.updated_at = currentTime;
-    await WriteAppendGoogleSheetData(object, {...newObject});
     if(objectDetail != null) {
         let newObjectDetail = {};
         const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
-        for(let i=1; i<tempKeyDetail.length-2; i++) {
+        for(let i=startColumn; i<tempKeyDetail.length-2; i++) {
             if (
                 requestBody[tempKeyDetail[i]] == undefined ||
                 requestBody[tempKeyDetail[i]] == null ||
@@ -208,18 +207,19 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp) 
             ) {
                 return resp.status(400).json({
                     info: 'Gagal Menambahkan Data! 🤤',
-                    message: 'Data Tidak Lengkap! 😦'
+                    message: 'Data Detail Tidak Lengkap! 😦'
                 });
             }
         }
         tempKeyDetail.forEach(key => {
             newObjectDetail[key] = requestBody[key];
         });
-        newObjectDetail.id = database[objectDetail].length + 1;
+        if(startColumn == 1) newObjectDetail.id = database[objectDetail].length + 1;
         newObjectDetail.created_at = currentTime;
         newObjectDetail.updated_at = currentTime;
-        await WriteAppendGoogleSheetData(objectDetail, {...newObjectDetail});
     }
+    await WriteAppendGoogleSheetData(object, {...newObject});
+    if(objectDetail != null) await WriteAppendGoogleSheetData(objectDetail, {...newObjectDetail});
     await RefreshGoogleSheetData();
     resp.json({
         info: 'Berhasil Menambahkan Data! ^_^.~ 😁',
@@ -549,7 +549,7 @@ app.post('/api/user/:user_name/add-favorites', (request, response) => {
     if('user_name' in request.params) {
         const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
         if(parameter != '') {
-            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/add-favorites`);
+            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/add-favorites => ${JSON.stringify(request.body)}`);
             const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
             if(index >= 0) {
                 try {
@@ -579,7 +579,7 @@ app.post('/api/user/:user_name/add-favorites', (request, response) => {
                             if (typeIdx >= 0) {
                                 const newFav = {...request.body};
                                 newFav.user_name = database.users[userIndex].user_name;
-                                AddNewDataToGoogleSheet('userFavorites', null, {...newFav}, response);
+                                AddNewDataToGoogleSheet('userFavorites', null, {...newFav}, response, 0);
                                 return;
                             }
                             else {
@@ -594,6 +594,51 @@ app.post('/api/user/:user_name/add-favorites', (request, response) => {
                             response.status(400).json({
                                 info: 'Gagal Menambah Favorite! 🤧 Type Tidak Sesuai! 😗',
                                 message: `Data Type ${request.body.type} Tidak Ada 😪`
+                            });
+                            return;
+                        }
+                    }
+                    else {
+                        throw 'Akses Ditolak! 😯';
+                    }
+                }
+                catch (e) {
+                    response.status(400).json({
+                        info: 'Whoops! Terjadi Kesalahan 🤔',
+                        result: e
+                    });
+                    return;
+                }
+            }
+        }
+    }
+    ResponseJsonDataNotFound(response, 'Data Favorite User 🤔', 'User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
+});
+app.post('/api/user/:user_name/delete-favorites', (request, response) => {
+    if('user_name' in request.params) {
+        const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
+        if(parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/delete-favorites`);
+            const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
+            if(index >= 0) {
+                try {
+                    let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+                    if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
+                    const decoded = jwt.verify(token, jwtSecretKey);
+                    const userIndex = database.users.findIndex(u => u.id == decoded.user.id);
+                    if(userIndex >= 0 && userIndex == index) {
+                        const iFav = database.userFavorites.findIndex(fav => (
+                            fav.user_name == database.users[userIndex].user_name &&
+                            fav.type == request.body.type &&
+                            fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited
+                        ));
+                        if(iFav >= 0) {
+                            // Delete Row
+                        }
+                        else {
+                            response.status(400).json({
+                                info: 'Gagal Menambah Favorite! 🤧 Data Sudah Ada! 😗',
+                                message: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Sudah Menjadi Favorit ${database.users[userIndex].user_name} 😪`
                             });
                             return;
                         }

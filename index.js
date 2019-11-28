@@ -611,7 +611,7 @@ app.post('/api/user/:user_name/add-favorites', (request, response) => {
                     }
                 }
                 catch (e) {
-                    response.status(400).json({
+                    response.status(401).json({
                         info: 'Whoops! Terjadi Kesalahan 🤔',
                         result: e
                     });
@@ -663,7 +663,7 @@ app.post('/api/user/:user_name/delete-favorites', (request, response) => {
                     }
                 }
                 catch (e) {
-                    response.status(400).json({
+                    response.status(401).json({
                         info: 'Whoops! Terjadi Kesalahan 🤔',
                         result: e
                     });

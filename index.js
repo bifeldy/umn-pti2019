@@ -383,7 +383,14 @@ app.post('/api/register', (request, response) => {
             else if(newUserData.password.length >= 128) {
                 const currentTime = new Date().getTime();
                 newUserData.id = database.users.length + 1;
-                if(!('foto' in newUserData)) newUserData.foto = 'https://via.placeholder.com/966x935';
+                if(
+                    !('foto' in newUserData) ||
+                    newUserData.foto == '' ||
+                    newUserData.foto == null ||
+                    newUserData.foto == undefined
+                ) {
+                    newUserData.foto = 'https://via.placeholder.com/966x935';
+                }
                 newUserData.created_at = currentTime;
                 newUserData.updated_at = currentTime;
                 const newUser = {

@@ -458,19 +458,12 @@ app.post('/api/update', (request, response) => {
         const index = database.users.findIndex(u => u.id == decoded.user.id);
         if(index >= 0) {
             if (
-                (
-                    !('nama_lengkap' in request.body) && !('alamat' in request.body) &&
-                    !('tanggal_lahir' in request.body) && !('foto' in request.body) &&
-                    !('password' in request.body)
-                ) ||
-                database.users[index].nama_lengkap == request.body.nama_lengkap ||
-                database.users[index].alamat == request.body.alamat ||
-                database.users[index].tanggal_lahir == request.body.tanggal_lahir ||
-                database.users[index].foto == request.body.foto ||
-                database.users[index].password == request.body.password
+                !('nama_lengkap' in request.body) && !('alamat' in request.body) &&
+                !('tanggal_lahir' in request.body) && !('foto' in request.body) &&
+                !('password' in request.body)
             ) {
                 response.json({
-                    info: 'Tidak Ada Data Profil Yang Berubah! 😝',
+                    info: 'Tidak Ada Data Profil Yang Dapat Diubah! 😝',
                     message: 'Hemn .. Menarik .. 🤯'
                 });
             }

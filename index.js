@@ -150,7 +150,6 @@ function LoadGoogleSheetData(workSheetTabName) {
             if ('angkatan' in database[workSheetTabName][index]) database[workSheetTabName][index].angkatan = parseInt(database[workSheetTabName][index].angkatan);
             if ('created_at' in database[workSheetTabName][index]) database[workSheetTabName][index].created_at = parseInt(database[workSheetTabName][index].created_at);
             if ('updated_at' in database[workSheetTabName][index]) database[workSheetTabName][index].updated_at = parseInt(database[workSheetTabName][index].updated_at);
-            
         }
         return tempKey;
     }).catch(err => console.log(err));

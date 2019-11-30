@@ -496,7 +496,7 @@ app.post('/api/update', (request, response) => {
             else {
                 const currentTime = new Date().getTime();
                 if('password' in request.body) {
-                    if(newUserData.password.length >= 128) {
+                    if(request.body.password.length >= 128) {
                         database.users[index].password = request.body.password;
                     }
                     else {

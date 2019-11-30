@@ -136,6 +136,12 @@ function LoadGoogleSheetData(workSheetTabName) {
         });
         database[workSheetTabName] = tempArr;
         for (let index=0; index<database[workSheetTabName].length; index++) {
+            // Object.keys(database[workSheetTabName][index]).forEach(key => {
+            //     if (!isNaN(database[workSheetTabName][index][key])) {
+            //         if (key == 'telepon' || key == 'id_kode_nim_isbn_favorited')
+            //         database[workSheetTabName][index][key] = parseInt(database[workSheetTabName][index][key]);
+            //     }
+            // });
             if ('id' in database[workSheetTabName][index]) database[workSheetTabName][index].id = parseInt(database[workSheetTabName][index].id);
             if ('harga' in database[workSheetTabName][index]) database[workSheetTabName][index].harga = parseInt(database[workSheetTabName][index].harga);
             if ('isbn' in database[workSheetTabName][index]) database[workSheetTabName][index].isbn = parseInt(database[workSheetTabName][index].isbn);
@@ -410,7 +416,14 @@ app.post('/api/register', (request, response) => {
     ) {
         newUserData.telepon = newUserData.telepon.replace(/[^0-9]+/g, '');
         newUserData.user_name = newUserData.user_name.replace(/[^0-9a-zA-Z]+/g, '');
-        if(newUserData.telepon != '' && newUserData.user_name != '') {
+        if(newUserData.telepon != '' && newUserData.user_name != '' && new Date(newUserData.tanggal_lahir) < new Date()) {
+            if ((Date.now() - new Date(newUserData.tanggal_lahir)) / (31557600000) < 13) {
+                response.status(400).json({
+                    info: 'Gagal Mendaftarkan User Baru! T_T 😪',
+                    message: `Kamu Masih Berada Dibawah Umur! 🤔`
+                });
+                return;
+            }
             const iUserName = database.users.findIndex(u => u.user_name == newUserData.user_name.toLowerCase());
             const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
             const iEmail = database.users.findIndex(u => u.email == newUserData.email.toLowerCase());
@@ -470,7 +483,7 @@ app.post('/api/register', (request, response) => {
     }
     response.status(400).json({
         info: 'Gagal Mendaftarkan User Baru! T_T 😒',
-        message: 'Data Pendaftar Tidak Lengkap! 😦'
+        message: 'Data Pendaftar Tidak Lengkap / Valid! 😦'
     });
 });
 

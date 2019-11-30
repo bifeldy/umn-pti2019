@@ -138,7 +138,7 @@ function LoadGoogleSheetData(workSheetTabName) {
         for (let index=0; index<database[workSheetTabName].length; index++) {
             // Object.keys(database[workSheetTabName][index]).forEach(key => {
             //     if (!isNaN(database[workSheetTabName][index][key])) {
-            //         if (key == 'telepon' || key == 'id_kode_nim_isbn_favorited')
+            //         if (key == 'telepon' || key == 'id_kode_nim_isbn_favorited') continue;
             //         database[workSheetTabName][index][key] = parseInt(database[workSheetTabName][index][key]);
             //     }
             // });

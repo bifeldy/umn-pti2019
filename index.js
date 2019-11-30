@@ -513,7 +513,7 @@ app.post('/api/update', (request, response) => {
                 if('foto' in request.body) database.users[index].foto = request.body.foto;
                 database.users[index].updated_at = currentTime;
                 WriteUpdateGoogleSheetData('users', {...database.users[index]});
-                resp.status(201).json({
+                response.status(201).json({
                     info: 'Berhasil Memperbaharui Data Profil! 😝',
                     token: JwtEncode(database.users[index])
                 });

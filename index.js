@@ -508,9 +508,10 @@ app.post('/api/update', (request, response) => {
             }
             else {
                 const currentTime = new Date().getTime();
+                const updateUser = {...database.users[index]};
                 if('password' in request.body) {
                     if(request.body.password.length >= 128) {
-                        database.users[index].password = request.body.password;
+                        updateUser.password = request.body.password;
                     }
                     else {
                         response.status(400).json({
@@ -520,15 +521,33 @@ app.post('/api/update', (request, response) => {
                         return;
                     }
                 }
-                if('nama_lengkap' in request.body) database.users[index].nama_lengkap = request.body.nama_lengkap;
-                if('alamat' in request.body) database.users[index].alamat = request.body.alamat;
-                if('tanggal_lahir' in request.body) database.users[index].tanggal_lahir = request.body.tanggal_lahir;
-                if('foto' in request.body) database.users[index].foto = request.body.foto;
-                database.users[index].updated_at = currentTime;
-                WriteUpdateGoogleSheetData('users', {...database.users[index]});
+                if('tanggal_lahir' in request.body) {
+                    if (new Date(request.body.tanggal_lahir) < new Date()) {
+                        if ((Date.now() - new Date(request.body.tanggal_lahir)) / (31557600000) < 13) {
+                            response.status(400).json({
+                                info: 'Gagal Memperbaharui User Baru! T_T 😪',
+                                message: `Minimal Umur 13++ Tahun! 🤔`
+                            });
+                            return;
+                        }
+                        updateUser.tanggal_lahir = request.body.tanggal_lahir;
+                    }
+                    else {
+                        response.status(400).json({
+                            info: 'Gagal Mendaftarkan User Baru! T_T 😒',
+                            message: 'Tanggal Lahir Tidak Valid! 😦'
+                        });
+                        return;
+                    }
+                }
+                if('nama_lengkap' in request.body) updateUser.nama_lengkap = request.body.nama_lengkap;
+                if('alamat' in request.body) updateUser.alamat = request.body.alamat;
+                if('foto' in request.body) updateUser.foto = request.body.foto;
+                updateUser.updated_at = currentTime;
+                WriteUpdateGoogleSheetData('users', {...updateUser});
                 response.status(201).json({
                     info: 'Berhasil Memperbaharui Data Profil! 😝',
-                    token: JwtEncode(database.users[index])
+                    token: JwtEncode(updateUser)
                 });
             }
         }
@@ -840,7 +859,27 @@ app.post('/api/mahasiswa', (request, response) => {
                     result
                 });
             }
-            else AddNewDataToGoogleSheet('mahasiswa', 'mahasiswaDetail', request.body, response);
+            else {
+                if('tanggal_lahir' in request.body) {
+                    if (new Date(request.body.tanggal_lahir) < new Date()) {
+                        if ((Date.now() - new Date(request.body.tanggal_lahir)) / (31557600000) < 15) {
+                            response.status(400).json({
+                                info: 'Gagal Menambah Data Mahasiswa! T_T 😪',
+                                message: `Minimal Umur 15++ Tahun! 🤔`
+                            });
+                            return;
+                        }
+                    }
+                    else {
+                        response.status(400).json({
+                            info: 'Gagal Menambah Data Mahasiswa! T_T 😒',
+                            message: 'Tanggal Lahir Tidak Valid! 😦'
+                        });
+                        return;
+                    }
+                }
+                AddNewDataToGoogleSheet('mahasiswa', 'mahasiswaDetail', request.body, response);
+            }
         }
         else {
             throw 'Harap Melakukan Login Ulang! 😯';

@@ -135,6 +135,17 @@ function LoadGoogleSheetData(workSheetTabName) {
             tempArr.push(tempObj);
         });
         database[workSheetTabName] = tempArr;
+        for (let index=0; index<database[workSheetTabName].length; index++) {
+            if ('id' in database[workSheetTabName][index]) database[workSheetTabName][index].id = parseInt(database[workSheetTabName][index].id);
+            if ('harga' in database[workSheetTabName][index]) database[workSheetTabName][index].harga = parseInt(database[workSheetTabName][index].harga);
+            if ('isbn' in database[workSheetTabName][index]) database[workSheetTabName][index].isbn = parseInt(database[workSheetTabName][index].isbn);
+            if ('anggota' in database[workSheetTabName][index]) database[workSheetTabName][index].anggota = parseInt(database[workSheetTabName][index].anggota);
+            if ('nim' in database[workSheetTabName][index]) database[workSheetTabName][index].nim = parseInt(database[workSheetTabName][index].nim);
+            if ('angkatan' in database[workSheetTabName][index]) database[workSheetTabName][index].angkatan = parseInt(database[workSheetTabName][index].angkatan);
+            if ('created_at' in database[workSheetTabName][index]) database[workSheetTabName][index].created_at = parseInt(database[workSheetTabName][index].created_at);
+            if ('updated_at' in database[workSheetTabName][index]) database[workSheetTabName][index].updated_at = parseInt(database[workSheetTabName][index].updated_at);
+            
+        }
         return tempKey;
     }).catch(err => console.log(err));
 }

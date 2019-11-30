@@ -4,7 +4,8 @@
 /node_modules
 
 # Google Credentials
-umn-pti2019-apiKey.json
+umn-pti2019-googleKey.json
+umn-pti2019-herokuKey.json
 
 # Backups
 /backups

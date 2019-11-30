@@ -18,19 +18,30 @@ const externalRequest = require('request');
 const favicon = require('serve-favicon');
 const path = require('path');
 
+/** Heroku API */
+let herokuKey;
+try {
+    herokuKey = require('./umn-pti2019-herokuKey.json');
+}
+catch(errorLoadCredential) {
+    console.log(`Heroku Credential File Not Found! './umn-pti2019-herokuKey.json'`);
+    console.log(`Using Alternate Config 'process.env.umn_pti2019_herokuKey'`);
+    herokuKey = JSON.parse(process.env.umn_pti2019_herokuKey);
+}
+
 /** Google Sheet API */
 const { google } = require('googleapis');
 
 var googleApiKey, googleClient, gsApi;
+try {
+    googleApiKey = require('./umn-pti2019-googleKey.json');
+}
+catch(errorLoadCredential) {
+    console.log(`Google Credential File Not Found! './umn-pti2019-googleKey.json'`);
+    console.log(`Using Alternate Config 'process.env.umn_pti2019_googleKey'`);
+    googleApiKey = JSON.parse(process.env.umn_pti2019_googleKey);
+}
 function InitializeGoogleAPI() {
-    try {
-        googleApiKey = require('./umn-pti2019-apiKey.json');
-    }
-    catch(errorLoadCredential) {
-        console.log(`Google Credential File Not Found! './umn-pti2019-apiKey.json'`);
-        console.log(`Using Alternate Config 'process.env.umn_pti2019_apiKey'`);
-        googleApiKey = JSON.parse(process.env.umn_pti2019_apiKey);
-    }
     googleClient = new google.auth.JWT(
         googleApiKey.client_email,
         null,
@@ -221,7 +232,7 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
     await WriteAppendGoogleSheetData(object, {...newObject});
     if(objectDetail != null) await WriteAppendGoogleSheetData(objectDetail, {...newObjectDetail});
     await RefreshGoogleSheetData();
-    resp.json({
+    resp.status(201).json({
         info: 'Berhasil Menambahkan Data! ^_^.~ 😁',
         result: (objectDetail != null ? {...newObject, ...newObjectDetail} : {...newObject})
     });
@@ -248,6 +259,29 @@ function ResponseJsonDataNotFound(response, info, message) {
 //     console.log(`${request.connection.remoteAddress} => /`);
 //     response.sendfile('./Information.png');
 // });
+
+app.get('/api/logs', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /logs`);
+    externalRequest({
+        method: 'POST',
+        url: `https://api.heroku.com/apps/${herokuKey.appId}/log-sessions`,
+        headers: {
+            'Authorization': `Bearer ${herokuKey.appToken}`,
+            'Accept': 'application/vnd.heroku+json; version=3'
+        },
+        form: {
+            "lines": 10,
+            "tail": true
+        }
+    },
+    (err, res, body) => {
+        if(!err && res.statusCode == 201) {
+            const loggingUrl = JSON.parse(body).logplex_url;
+            console.log(`New Logging Url => ${loggingUrl}`);
+            response.redirect(loggingUrl);
+        }
+    });
+});
 
 /** API Page */
 app.get('/api', (request, response) => {
@@ -430,25 +464,6 @@ app.post('/api/register', (request, response) => {
 });
 
 /** User Profile */
-app.get('/api/user/:user_name', (request, response) => {
-    if('user_name' in request.params) {
-        const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
-        if(parameter != '') {
-            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}`);
-            const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
-            const user = {...database.users[index]};
-            delete user.password;
-            if(index >= 0) {
-                response.json({
-                    info: 'Data Profile User 🤔',
-                    result: user
-                });
-                return;
-            }
-        }
-    }
-    ResponseJsonDataNotFound(response, 'Data Profile User 🤔', 'User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
-});
 app.post('/api/update', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/update => ${JSON.stringify(request.body)}`);
     try {
@@ -487,7 +502,7 @@ app.post('/api/update', (request, response) => {
                 if('foto' in request.body) database.users[index].foto = request.body.foto;
                 database.users[index].updated_at = currentTime;
                 WriteUpdateGoogleSheetData('users', {...database.users[index]});
-                response.json({
+                resp.status(201).json({
                     info: 'Berhasil Memperbaharui Data Profil! 😝',
                     token: JwtEncode(database.users[index])
                 });
@@ -506,6 +521,129 @@ app.post('/api/update', (request, response) => {
             result: error
         });
     }
+});
+app.post('/api/add-favorites', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /api/add-favorites => ${JSON.stringify(request.body)}`);
+    try {
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
+        const userIndex = database.users.findIndex(u => u.id == decoded.user.id);
+        if(userIndex >= 0) {
+            const iFav = database.userFavorites.findIndex(fav => (
+                fav.user_name == database.users[userIndex].user_name &&
+                fav.type == request.body.type &&
+                fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
+                fav.deleted == "FALSE"
+            ));
+            if(iFav >= 0) {
+                response.status(400).json({
+                    info: 'Gagal Menambah Favorite! 🤧 Data Sudah Ada! 😗',
+                    message: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Sudah Menjadi Favorit ${database.users[userIndex].user_name} 😪`
+                });
+                return;
+            }
+            if (request.body.type in database) {
+                const typeIdx = database[request.body.type].findIndex(i => (
+                    i.kode == request.body.id_kode_nim_isbn_favorited ||
+                    i.isbn == request.body.id_kode_nim_isbn_favorited ||
+                    i.nim == request.body.id_kode_nim_isbn_favorited
+                ));
+                if (typeIdx >= 0) {
+                    const newFav = {...request.body};
+                    newFav.user_name = database.users[userIndex].user_name;
+                    newFav.deleted = "FALSE";
+                    AddNewDataToGoogleSheet('userFavorites', null, newFav, response, 1, 1);
+                    return;
+                }
+                else {
+                    response.status(400).json({
+                        info: 'Gagal Menambah Favorite! 🤧 Kode Nomor Id Tidak Sesuai! 😗',
+                        message: `Data ${request.body.id_kode_nim_isbn_favorited} Tidak Ada Dalam ${request.body.type} 😪`
+                    });
+                    return;
+                }
+            }
+            else {
+                response.status(400).json({
+                    info: 'Gagal Menambah Favorite! 🤧 Type Tidak Sesuai! 😗',
+                    message: `Data Type ${request.body.type} Tidak Ada 😪`
+                });
+                return;
+            }
+        }
+        else {
+            throw 'Akses Ditolak! 😯';
+        }
+    }
+    catch (e) {
+        response.status(401).json({
+            info: 'Whoops! Terjadi Kesalahan 🤔',
+            result: e
+        });
+    }
+});
+app.post('/api/delete-favorites', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/delete-favorites`);
+    try {
+        let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+        if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
+        const decoded = jwt.verify(token, jwtSecretKey);
+        const userIndex = database.users.findIndex(u => u.id == decoded.user.id);
+        if(userIndex >= 0) {
+            const iFav = database.userFavorites.findIndex(fav => (
+                fav.user_name == database.users[userIndex].user_name &&
+                fav.type == request.body.type &&
+                fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
+                fav.deleted == "FALSE"
+            ));
+            if(iFav >= 0) {
+                database.userFavorites[iFav].deleted = "TRUE";
+                WriteUpdateGoogleSheetData('userFavorites', {...database.userFavorites[iFav]});
+                response.json({
+                    info: 'Berhasil Menghapus Favorite! 😝',
+                    token: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Behasil Di Hapus Dari Favorite 🤔`
+                });
+                return;
+            }
+            else {
+                response.status(400).json({
+                    info: 'Gagal Menambah Favorite! 🤧 Data Tidak Ada! 😗',
+                    message: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Belum Menjadi Favorit ${database.users[userIndex].user_name} 😪`
+                });
+                return;
+            }
+        }
+        else {
+            throw 'Akses Ditolak! 😯';
+        }
+    }
+    catch (e) {
+        response.status(401).json({
+            info: 'Whoops! Terjadi Kesalahan 🤔',
+            result: e
+        });
+        return;
+    }
+});
+app.get('/api/user/:user_name', (request, response) => {
+    if('user_name' in request.params) {
+        const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
+        if(parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}`);
+            const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
+            const user = {...database.users[index]};
+            delete user.password;
+            if(index >= 0) {
+                response.json({
+                    info: 'Data Profile User 🤔',
+                    result: user
+                });
+                return;
+            }
+        }
+    }
+    ResponseJsonDataNotFound(response, 'Data Profile User 🤔', 'User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
 app.get('/api/user/:user_name/favorites', (request, response) => {
     if('user_name' in request.params) {
@@ -551,131 +689,8 @@ app.get('/api/user/:user_name/favorites', (request, response) => {
     }
     ResponseJsonDataNotFound(response, 'Data Favorite User 🤔', 'Data Favorite Dari User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
-app.post('/api/user/:user_name/add-favorites', (request, response) => {
-    if('user_name' in request.params) {
-        const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
-        if(parameter != '') {
-            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/add-favorites => ${JSON.stringify(request.body)}`);
-            const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
-            if(index >= 0) {
-                try {
-                    let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-                    if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
-                    const decoded = jwt.verify(token, jwtSecretKey);
-                    const userIndex = database.users.findIndex(u => u.id == decoded.user.id);
-                    if(userIndex >= 0 && userIndex == index) {
-                        const iFav = database.userFavorites.findIndex(fav => (
-                            fav.user_name == database.users[userIndex].user_name &&
-                            fav.type == request.body.type &&
-                            fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
-                            fav.deleted == "FALSE"
-                        ));
-                        if(iFav >= 0) {
-                            response.status(400).json({
-                                info: 'Gagal Menambah Favorite! 🤧 Data Sudah Ada! 😗',
-                                message: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Sudah Menjadi Favorit ${database.users[userIndex].user_name} 😪`
-                            });
-                            return;
-                        }
-                        if (request.body.type in database) {
-                            const typeIdx = database[request.body.type].findIndex(i => (
-                                i.kode == request.body.id_kode_nim_isbn_favorited ||
-                                i.isbn == request.body.id_kode_nim_isbn_favorited ||
-                                i.nim == request.body.id_kode_nim_isbn_favorited
-                            ));
-                            if (typeIdx >= 0) {
-                                const newFav = {...request.body};
-                                newFav.user_name = database.users[userIndex].user_name;
-                                newFav.deleted = "FALSE";
-                                AddNewDataToGoogleSheet('userFavorites', null, newFav, response, 1, 1);
-                                return;
-                            }
-                            else {
-                                response.status(400).json({
-                                    info: 'Gagal Menambah Favorite! 🤧 Kode Nomor Id Tidak Sesuai! 😗',
-                                    message: `Data ${request.body.id_kode_nim_isbn_favorited} Tidak Ada Dalam ${request.body.type} 😪`
-                                });
-                                return;
-                            }
-                        }
-                        else {
-                            response.status(400).json({
-                                info: 'Gagal Menambah Favorite! 🤧 Type Tidak Sesuai! 😗',
-                                message: `Data Type ${request.body.type} Tidak Ada 😪`
-                            });
-                            return;
-                        }
-                    }
-                    else {
-                        throw 'Akses Ditolak! 😯';
-                    }
-                }
-                catch (e) {
-                    response.status(401).json({
-                        info: 'Whoops! Terjadi Kesalahan 🤔',
-                        result: e
-                    });
-                    return;
-                }
-            }
-        }
-    }
-    ResponseJsonDataNotFound(response, 'Data Favorite User 🤔', 'User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
-});
-app.post('/api/user/:user_name/delete-favorites', (request, response) => {
-    if('user_name' in request.params) {
-        const parameter = request.params.user_name.replace(/[^0-9a-zA-Z]+/g, '');
-        if(parameter != '') {
-            console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/delete-favorites`);
-            const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
-            if(index >= 0) {
-                try {
-                    let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
-                    if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
-                    const decoded = jwt.verify(token, jwtSecretKey);
-                    const userIndex = database.users.findIndex(u => u.id == decoded.user.id);
-                    if(userIndex >= 0 && userIndex == index) {
-                        const iFav = database.userFavorites.findIndex(fav => (
-                            fav.user_name == database.users[userIndex].user_name &&
-                            fav.type == request.body.type &&
-                            fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
-                            fav.deleted == "FALSE"
-                        ));
-                        if(iFav >= 0) {
-                            database.userFavorites[iFav].deleted = "TRUE";
-                            WriteUpdateGoogleSheetData('userFavorites', {...database.userFavorites[iFav]});
-                            response.json({
-                                info: 'Berhasil Menghapus Favorite! 😝',
-                                token: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Behasil Di Hapus Dari Favorite 🤔`
-                            });
-                            return;
-                        }
-                        else {
-                            response.status(400).json({
-                                info: 'Gagal Menambah Favorite! 🤧 Data Tidak Ada! 😗',
-                                message: `Data ${request.body.type} Dengan Kode Nomor Id ${request.body.id_kode_nim_isbn_favorited} Belum Menjadi Favorit ${database.users[userIndex].user_name} 😪`
-                            });
-                            return;
-                        }
-                    }
-                    else {
-                        throw 'Akses Ditolak! 😯';
-                    }
-                }
-                catch (e) {
-                    response.status(401).json({
-                        info: 'Whoops! Terjadi Kesalahan 🤔',
-                        result: e
-                    });
-                    return;
-                }
-            }
-        }
-    }
-    ResponseJsonDataNotFound(response, 'Data Favorite User 🤔', 'User Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
-});
 
-/** Searching */
+/** Searching -- Dropped! */
 app.get('/api/search', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/search`);
     const queryBy = request.query['query'].replace(/[^0-9a-zA-Z]+/g, '');

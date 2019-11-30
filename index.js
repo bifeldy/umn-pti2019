@@ -405,79 +405,93 @@ app.post('/api/register', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/register => ${JSON.stringify(request.body)}`);
     let newUserData = request.body;
     if (
-        'user_name' in newUserData && newUserData.user_name != null &&  newUserData.user_name != '' &&  newUserData.user_name != undefined &&
-        'telepon' in newUserData && newUserData.telepon != null &&  newUserData.telepon != '' &&  newUserData.telepon != undefined &&
-        'email' in newUserData && newUserData.email != null &&  newUserData.email != '' &&  newUserData.email != undefined &&
-        'nama_lengkap' in newUserData && newUserData.nama_lengkap != null &&  newUserData.nama_lengkap != '' &&  newUserData.nama_lengkap != undefined &&
-        'alamat' in newUserData && newUserData.alamat != null &&  newUserData.alamat != '' &&  newUserData.alamat != undefined &&
-        'tanggal_lahir' in newUserData && newUserData.tanggal_lahir != null &&  newUserData.tanggal_lahir != '' &&  newUserData.tanggal_lahir != undefined &&
-        'password' in newUserData && newUserData.password != null &&  newUserData.password != '' &&  newUserData.password != undefined
+        'user_name' in newUserData &&
+        'telepon' in newUserData &&
+        'email' in newUserData &&
+        'nama_lengkap' in newUserData &&
+        'alamat' in newUserData &&
+        'tanggal_lahir' in newUserData &&
+        'password' in newUserData
     ) {
-        newUserData.telepon = newUserData.telepon.replace(/[^0-9]+/g, '');
         newUserData.user_name = newUserData.user_name.replace(/[^0-9a-zA-Z]+/g, '');
-        if(newUserData.telepon != '' && newUserData.user_name != '' && new Date(newUserData.tanggal_lahir) < new Date()) {
-            if ((Date.now() - new Date(newUserData.tanggal_lahir)) / (31557600000) < 13) {
-                response.status(400).json({
-                    info: 'Gagal Mendaftarkan User Baru! T_T 😪',
-                    message: `Kamu Masih Berada Dibawah Umur! 🤔`
-                });
+        newUserData.telepon = newUserData.telepon.replace(/[^0-9]+/g, '');
+        newUserData.email = newUserData.email.replace(/[^0-9a-zA-Z@.]+/g, '');
+        newUserData.nama_lengkap = newUserData.nama_lengkap.replace(/[^a-zA-Z\s]+/g, '');
+        newUserData.alamat = newUserData.alamat.replace(/[^0-9a-zA-Z.,\s]+/g, '');
+        newUserData.tanggal_lahir = newUserData.tanggal_lahir.replace(/[^0-9-]+/g, '');
+        if (
+            newUserData.user_name != null &&  newUserData.user_name != '' &&  newUserData.user_name != undefined &&
+            newUserData.telepon != null &&  newUserData.telepon != '' &&  newUserData.telepon != undefined &&
+            newUserData.email != null &&  newUserData.email != '' &&  newUserData.email != undefined &&
+            newUserData.nama_lengkap != null &&  newUserData.nama_lengkap != '' &&  newUserData.nama_lengkap != undefined &&
+            newUserData.alamat != null &&  newUserData.alamat != '' &&  newUserData.alamat != undefined &&
+            newUserData.tanggal_lahir != null &&  newUserData.tanggal_lahir != '' &&  newUserData.tanggal_lahir != undefined &&
+            newUserData.password != null &&  newUserData.password != '' &&  newUserData.password != undefined
+        ) {
+            if(newUserData.telepon != '' && newUserData.user_name != '' && new Date(newUserData.tanggal_lahir) < new Date()) {
+                if ((Date.now() - new Date(newUserData.tanggal_lahir)) / (31557600000) < 13) {
+                    response.status(400).json({
+                        info: 'Gagal Mendaftarkan User Baru! T_T 😪',
+                        message: `Kamu Masih Berada Dibawah Umur! 🤔`
+                    });
+                    return;
+                }
+                const iUserName = database.users.findIndex(u => u.user_name == newUserData.user_name.toLowerCase());
+                const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
+                const iEmail = database.users.findIndex(u => u.email == newUserData.email.toLowerCase());
+                const index = Math.max(iUserName, iEmail, iPhone);
+                if(index >= 0) {
+                    const result = {};
+                    if(iUserName >= 0) result.user_name = 'Username Sudah Terpakai! 😭';
+                    if(iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
+                    if(iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
+                    response.status(400).json({
+                        info: 'Gagal Mendaftarkan User Baru! T_T 😪',
+                        result
+                    });
+                }
+                else if(newUserData.password.length >= 128) {
+                    const currentTime = new Date().getTime();
+                    newUserData.id = database.users.length + 1;
+                    if(
+                        !('foto' in newUserData) ||
+                        newUserData.foto == '' ||
+                        newUserData.foto == null ||
+                        newUserData.foto == undefined
+                    ) {
+                        newUserData.foto = 'https://via.placeholder.com/966x935';
+                    }
+                    newUserData.created_at = currentTime;
+                    newUserData.updated_at = currentTime;
+                    const newUser = {
+                        id: newUserData.id,
+                        user_name: newUserData.user_name.toLowerCase(),
+                        telepon: newUserData.telepon,
+                        email: newUserData.email.toLowerCase(),
+                        nama_lengkap: newUserData.nama_lengkap,
+                        alamat: newUserData.alamat,
+                        tanggal_lahir: newUserData.tanggal_lahir,
+                        foto: newUserData.foto,
+                        password: newUserData.password,
+                        created_at: newUserData.created_at,
+                        updated_at: newUserData.updated_at
+                    }
+                    WriteAppendGoogleSheetData('users', {...newUser});
+                    const newUserWithoutPassword = newUser;
+                    delete newUserWithoutPassword.password;
+                    response.json({
+                        info: 'Berhasil Mendaftarkan User Baru! ^_^.~ 😁',
+                        token: JwtEncode(newUserWithoutPassword)
+                    });
+                }
+                else {
+                    response.status(400).json({
+                        info: 'Gagal Mendaftarkan User Baru! T_T 😪',
+                        message: 'Harap Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
+                    });
+                }
                 return;
             }
-            const iUserName = database.users.findIndex(u => u.user_name == newUserData.user_name.toLowerCase());
-            const iPhone = database.users.findIndex(u => u.telepon == newUserData.telepon);
-            const iEmail = database.users.findIndex(u => u.email == newUserData.email.toLowerCase());
-            const index = Math.max(iUserName, iEmail, iPhone);
-            if(index >= 0) {
-                let result = {};
-                if(iUserName >= 0) result.user_name = 'Username Sudah Terpakai! 😭';
-                if(iEmail >= 0) result.email = 'Email Sudah Terpakai! 😭';
-                if(iPhone >= 0) result.telepon = 'No. HP Sudah Terpakai! 😭';
-                response.status(400).json({
-                    info: 'Gagal Mendaftarkan User Baru! T_T 😪',
-                    result
-                });
-            }
-            else if(newUserData.password.length >= 128) {
-                const currentTime = new Date().getTime();
-                newUserData.id = database.users.length + 1;
-                if(
-                    !('foto' in newUserData) ||
-                    newUserData.foto == '' ||
-                    newUserData.foto == null ||
-                    newUserData.foto == undefined
-                ) {
-                    newUserData.foto = 'https://via.placeholder.com/966x935';
-                }
-                newUserData.created_at = currentTime;
-                newUserData.updated_at = currentTime;
-                const newUser = {
-                    id: newUserData.id,
-                    user_name: newUserData.user_name.toLowerCase(),
-                    telepon: newUserData.telepon,
-                    email: newUserData.email.toLowerCase(),
-                    nama_lengkap: newUserData.nama_lengkap,
-                    alamat: newUserData.alamat,
-                    tanggal_lahir: newUserData.tanggal_lahir,
-                    foto: newUserData.foto,
-                    password: newUserData.password,
-                    created_at: newUserData.created_at,
-                    updated_at: newUserData.updated_at
-                }
-                WriteAppendGoogleSheetData('users', {...newUser});
-                const newUserWithoutPassword = newUser;
-                delete newUserWithoutPassword.password;
-                response.json({
-                    info: 'Berhasil Mendaftarkan User Baru! ^_^.~ 😁',
-                    token: JwtEncode(newUserWithoutPassword)
-                });
-            }
-            else {
-                response.status(400).json({
-                    info: 'Gagal Mendaftarkan User Baru! T_T 😪',
-                    message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
-                });
-            }
-            return;
         }
     }
     response.status(400).json({
@@ -508,41 +522,37 @@ app.post('/api/update', (request, response) => {
             else {
                 const currentTime = new Date().getTime();
                 const updateUser = {...database.users[index]};
+                const error = {};
                 if('password' in request.body) {
                     if(request.body.password.length >= 128) {
                         updateUser.password = request.body.password;
                     }
-                    else {
-                        response.status(400).json({
-                            info: 'Gagal Memperbaharui Data Profil! 🤧',
-                            message: 'Harap Daftar Dengan Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄'
-                        });
-                        return;
-                    }
+                    else error.password = 'Harap Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄';
                 }
                 if('tanggal_lahir' in request.body) {
                     if (new Date(request.body.tanggal_lahir) < new Date()) {
                         if ((Date.now() - new Date(request.body.tanggal_lahir)) / (31557600000) < 13) {
-                            response.status(400).json({
-                                info: 'Gagal Memperbaharui User Baru! T_T 😪',
-                                message: `Minimal Umur 13++ Tahun! 🤔`
-                            });
-                            return;
+                            error.tanggal_lahir = 'Minimal Umur 13++ Tahun! 🤔';
                         }
-                        updateUser.tanggal_lahir = request.body.tanggal_lahir;
+                        else updateUser.tanggal_lahir = request.body.tanggal_lahir;
                     }
-                    else {
-                        response.status(400).json({
-                            info: 'Gagal Mendaftarkan User Baru! T_T 😒',
-                            message: 'Tanggal Lahir Tidak Valid! 😦'
-                        });
-                        return;
-                    }
+                    else error.tanggal_lahir = 'Tanggal Lahir Tidak Valid! 😦';
                 }
-                if('nama_lengkap' in request.body) updateUser.nama_lengkap = request.body.nama_lengkap;
-                if('alamat' in request.body) updateUser.alamat = request.body.alamat;
+                if('nama_lengkap' in request.body) {
+                    if (request.body.nama_lengkap.replace(/[^a-zA-Z\s]+/g, '') == '') {
+                        error.nama_lengkap = 'Nama Lengkap Tidak Valid! 😦';
+                    }
+                    else updateUser.nama_lengkap = request.body.nama_lengkap.replace(/[^a-zA-Z\s]+/g, '');
+                }
+                if('alamat' in request.body) {
+                    if (request.body.alamat.replace(/[^0-9a-zA-Z.,\/\s]+/g, '') == '') {
+                        error.alamat = 'Alamat Tidak Valid! 😦';
+                    }
+                    else updateUser.alamat = request.body.alamat.replace(/[^0-9a-zA-Z.,\/\s]+/g, '');
+                }
                 if('foto' in request.body) updateUser.foto = request.body.foto;
                 updateUser.updated_at = currentTime;
+                if(Object.keys(error).length > 0) throw error;
                 WriteUpdateGoogleSheetData('users', {...updateUser});
                 response.status(201).json({
                     info: 'Berhasil Memperbaharui Data Profil! 😝',

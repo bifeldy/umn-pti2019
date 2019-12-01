@@ -636,7 +636,7 @@ app.post('/api/add-favorites', (request, response) => {
     }
 });
 app.post('/api/delete-favorites', (request, response) => {
-    console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/delete-favorites`);
+    console.log(`${request.connection.remoteAddress} => /api/user/delete-favorites => ${JSON.stringify(request.body)}`);
     try {
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
         if(token.startsWith('Bearer ')) token = token.slice(7, token.length);

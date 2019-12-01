@@ -148,6 +148,7 @@ function LoadGoogleSheetData(workSheetTabName) {
             if ('anggota' in database[workSheetTabName][index]) database[workSheetTabName][index].anggota = parseInt(database[workSheetTabName][index].anggota);
             if ('nim' in database[workSheetTabName][index]) database[workSheetTabName][index].nim = parseInt(database[workSheetTabName][index].nim);
             if ('angkatan' in database[workSheetTabName][index]) database[workSheetTabName][index].angkatan = parseInt(database[workSheetTabName][index].angkatan);
+            if ('deleted' in database[workSheetTabName][index]) database[workSheetTabName][index].deleted = (database[workSheetTabName][index].deleted == 'TRUE');
             if ('created_at' in database[workSheetTabName][index]) database[workSheetTabName][index].created_at = parseInt(database[workSheetTabName][index].created_at);
             if ('updated_at' in database[workSheetTabName][index]) database[workSheetTabName][index].updated_at = parseInt(database[workSheetTabName][index].updated_at);
         }
@@ -586,7 +587,7 @@ app.post('/api/add-favorites', (request, response) => {
                 fav.user_name == database.users[userIndex].user_name &&
                 fav.type == request.body.type &&
                 fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
-                fav.deleted == "FALSE"
+                fav.deleted == false
             ));
             if(iFav >= 0) {
                 response.status(400).json({
@@ -604,7 +605,7 @@ app.post('/api/add-favorites', (request, response) => {
                 if (typeIdx >= 0) {
                     const newFav = {...request.body};
                     newFav.user_name = database.users[userIndex].user_name;
-                    newFav.deleted = "FALSE";
+                    newFav.deleted = false;
                     AddNewDataToGoogleSheet('userFavorites', null, newFav, response, 1, 1);
                     return;
                 }
@@ -647,10 +648,10 @@ app.post('/api/delete-favorites', (request, response) => {
                 fav.user_name == database.users[userIndex].user_name &&
                 fav.type == request.body.type &&
                 fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
-                fav.deleted == "FALSE"
+                fav.deleted == false
             ));
             if(iFav >= 0) {
-                database.userFavorites[iFav].deleted = "TRUE";
+                database.userFavorites[iFav].deleted = true;
                 WriteUpdateGoogleSheetData('userFavorites', {...database.userFavorites[iFav]});
                 response.json({
                     info: 'Berhasil Menghapus Favorite! 😝',
@@ -704,7 +705,7 @@ app.get('/api/user/:user_name/favorites', (request, response) => {
             console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/favorites`);
             const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
             if(index >= 0) {
-                let tempFavorites = database.userFavorites.filter(fav => (fav.user_name == database.users[index].user_name && fav.deleted == "FALSE"));
+                let tempFavorites = database.userFavorites.filter(fav => (fav.user_name == database.users[index].user_name && !fav.deleted));
                 let favorites = [];
                 for (let i=0; i<tempFavorites.length; i++) {
                     const temp = {...tempFavorites[i]};
@@ -718,16 +719,16 @@ app.get('/api/user/:user_name/favorites', (request, response) => {
                     const orderBy = request.query['order'];
                     if(sortBy) {
                         try {
-                            favorites.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
                             if(orderBy == 'desc') {
                                 favorites.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
                             }
+                            else favorites.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
                         }
                         catch (err) {
-                            favorites.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
                             if(orderBy == 'desc') {
                                 favorites.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
                             }
+                            else favorites.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
                         }
                     }
                 }
@@ -826,16 +827,16 @@ app.get('/api/mahasiswa', (request, response) => {
     const orderBy = request.query['order'];
     if(sortBy) {
         try {
-            mahasiswa.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
             if(orderBy == 'desc') {
                 mahasiswa.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
             }
+            else mahasiswa.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
         }
         catch (err) {
-            mahasiswa.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
             if(orderBy == 'desc') {
                 mahasiswa.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
+            else mahasiswa.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
         }
     }
     response.json({
@@ -930,16 +931,16 @@ app.get('/api/ukm', (request, response) => {
     const orderBy = request.query['order'];
     if(sortBy) {
         try {
-            ukm.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
             if(orderBy == 'desc') {
                 ukm.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
             }
+            else ukm.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
         }
         catch (err) {
-            ukm.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
             if(orderBy == 'desc') {
                 ukm.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
+            else ukm.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
         }
     }
     response.json({
@@ -1009,16 +1010,16 @@ app.get('/api/perpustakaan', (request, response) => {
     const orderBy = request.query['order'];
     if(sortBy) {
         try {
-            perpustakaan.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
             if(orderBy == 'desc') {
                 perpustakaan.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
             }
+            else perpustakaan.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
         }
         catch (err) {
-            perpustakaan.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
             if(orderBy == 'desc') {
                 perpustakaan.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
+            else perpustakaan.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
         }
     }
     response.json({
@@ -1088,16 +1089,16 @@ app.get('/api/fasilitas', (request, response) => {
     const orderBy = request.query['order'];
     if(sortBy) {
         try {
-            fasilitas.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
             if(orderBy == 'desc') {
                 fasilitas.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
             }
+            else fasilitas.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
         }
         catch (err) {
-            fasilitas.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
             if(orderBy == 'desc') {
                 fasilitas.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
+            else fasilitas.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
         }
     }
     response.json({
@@ -1167,16 +1168,16 @@ app.get('/api/kantin', (request, response) => {
     const orderBy = request.query['order'];
     if(sortBy) {
         try {
-            kantin.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
             if(orderBy == 'desc') {
                 kantin.sort((a, b) => (JSON.parse(a[sortBy]) < JSON.parse(b[sortBy])) ? 1 : -1);
             }
+            else kantin.sort((a, b) => (JSON.parse(a[sortBy]) > JSON.parse(b[sortBy])) ? 1 : -1);
         }
         catch (err) {
-            kantin.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
             if(orderBy == 'desc') {
                 kantin.sort((a, b) => (a[sortBy] < b[sortBy]) ? 1 : -1);
             }
+            else kantin.sort((a, b) => (a[sortBy] > b[sortBy]) ? 1 : -1);
         }
     }
     response.json({

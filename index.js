@@ -148,7 +148,7 @@ function LoadGoogleSheetData(workSheetTabName) {
             if ('anggota' in database[workSheetTabName][index]) database[workSheetTabName][index].anggota = parseInt(database[workSheetTabName][index].anggota);
             if ('nim' in database[workSheetTabName][index]) database[workSheetTabName][index].nim = parseInt(database[workSheetTabName][index].nim);
             if ('angkatan' in database[workSheetTabName][index]) database[workSheetTabName][index].angkatan = parseInt(database[workSheetTabName][index].angkatan);
-            if ('deleted' in database[workSheetTabName][index]) database[workSheetTabName][index].deleted = (database[workSheetTabName][index].deleted == 'TRUE');
+            // if ('deleted' in database[workSheetTabName][index]) database[workSheetTabName][index].deleted = (database[workSheetTabName][index].deleted == 'TRUE');
             if ('created_at' in database[workSheetTabName][index]) database[workSheetTabName][index].created_at = parseInt(database[workSheetTabName][index].created_at);
             if ('updated_at' in database[workSheetTabName][index]) database[workSheetTabName][index].updated_at = parseInt(database[workSheetTabName][index].updated_at);
         }
@@ -247,6 +247,7 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
         newObjectDetail.updated_at = currentTime;
     }
     await WriteAppendGoogleSheetData(object, {...newObject});
+    if ('deleted' in newObject) delete newObject.deleted;
     if(objectDetail != null) await WriteAppendGoogleSheetData(objectDetail, {...newObjectDetail});
     await RefreshGoogleSheetData();
     resp.status(201).json({
@@ -587,7 +588,7 @@ app.post('/api/add-favorites', (request, response) => {
                 fav.user_name == database.users[userIndex].user_name &&
                 fav.type == request.body.type &&
                 fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
-                fav.deleted == false
+                fav.deleted == 'FALSE'
             ));
             if(iFav >= 0) {
                 response.status(400).json({
@@ -605,8 +606,8 @@ app.post('/api/add-favorites', (request, response) => {
                 if (typeIdx >= 0) {
                     const newFav = {...request.body};
                     newFav.user_name = database.users[userIndex].user_name;
-                    newFav.deleted = false;
-                    AddNewDataToGoogleSheet('userFavorites', null, newFav, response, 1, 1);
+                    newFav.deleted = 'FALSE';
+                    AddNewDataToGoogleSheet('userFavorites', null, newFav, response, 1);
                     return;
                 }
                 else {
@@ -648,10 +649,11 @@ app.post('/api/delete-favorites', (request, response) => {
                 fav.user_name == database.users[userIndex].user_name &&
                 fav.type == request.body.type &&
                 fav.id_kode_nim_isbn_favorited == request.body.id_kode_nim_isbn_favorited &&
-                fav.deleted == false
+                fav.deleted == 'FALSE'
             ));
             if(iFav >= 0) {
-                database.userFavorites[iFav].deleted = true;
+                database.userFavorites[iFav].deleted = 'TRUE';
+                database.userFavorites[iFav].updated_at = new Date().getTime();
                 WriteUpdateGoogleSheetData('userFavorites', {...database.userFavorites[iFav]});
                 response.json({
                     info: 'Berhasil Menghapus Favorite! 😝',
@@ -705,7 +707,7 @@ app.get('/api/user/:user_name/favorites', (request, response) => {
             console.log(`${request.connection.remoteAddress} => /api/user/${parameter}/favorites`);
             const index = database.users.findIndex(u => u.user_name == parameter.toLowerCase());
             if(index >= 0) {
-                let tempFavorites = database.userFavorites.filter(fav => (fav.user_name == database.users[index].user_name && !fav.deleted));
+                let tempFavorites = database.userFavorites.filter(fav => (fav.user_name == database.users[index].user_name && fav.deleted == 'FALSE'));
                 let favorites = [];
                 for (let i=0; i<tempFavorites.length; i++) {
                     const temp = {...tempFavorites[i]};

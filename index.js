@@ -503,7 +503,7 @@ app.post('/api/register', (request, response) => {
 });
 
 /** User Profile */
-app.post('/api/update', (request, response) => {
+app.put('/api/update', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/update => ${JSON.stringify(request.body)}`);
     try {
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;

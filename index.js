@@ -637,7 +637,7 @@ app.post('/api/add-favorites', (request, response) => {
         });
     }
 });
-app.post('/api/delete-favorites', (request, response) => {
+app.delete('/api/delete-favorites', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/user/delete-favorites => ${JSON.stringify(request.body)}`);
     try {
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
@@ -904,6 +904,96 @@ app.post('/api/mahasiswa', (request, response) => {
         });
     }
 });
+app.put('/api/mahasiswa/:nim', (request, response) => {
+    if('nim' in request.params) {
+        const parameter = request.params.nim.replace(/[^0-9]+/g, '');
+        if(parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/mahasiswa/${parameter} => ${JSON.stringify(request.body)}`);
+            const idxMahasiswa = database.mahasiswa.findIndex(u => u.nim == parseInt(parameter));
+            if(idxMahasiswa >= 0) {
+                try {
+                    let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+                    if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
+                    const decoded = jwt.verify(token, jwtSecretKey);
+                    const idx = database.users.findIndex(u => u.id == decoded.user.id);
+                    if(idx >= 0) {
+                        if (
+                            !('nama_lengkap' in request.body) && !('telepon' in request.body) &&
+                            !('foto' in request.body) && !('alamat' in request.body) &&
+                            !('prodi' in request.body) && !('tanggal_lahir' in request.body) && !('angkatan' in request.body)
+                        ) {
+                            response.json({
+                                info: 'Tidak Ada Data Mahasiswa Yang Dapat Diubah! 😝',
+                                message: 'Hemn .. Menarik .. 🤯'
+                            });
+                        }
+                        else {
+                            const currentTime = new Date().getTime();
+                            const updateMahasiswa = {...database.mahasiswa[idxMahasiswa]};
+                            const updateMahasiswaDetail = {...database.mahasiswaDetail[idxMahasiswa]};
+                            const error = {};
+                            if('nama_lengkap' in request.body) {
+                                const newNamaLengkap = request.body.nama_lengkap.replace(/[^a-zA-Z\s]+/g, '');
+                                if (newNamaLengkap == '') error.nama_lengkap = 'Nama Tidak Valid! 😦';
+                                else updateMahasiswa.nama_lengkap = newNamaLengkap;
+                            }
+                            if('telepon' in request.body) {
+                                const newTelepon = request.body.telepon.replace(/[^0-9]+/g, '')
+                                if (newTelepon == '') error.telepon = 'Jumlah Tidak Valid! 😦';
+                                else updateMahasiswaDetail.telepon = newTelepon;
+                            }
+                            if('foto' in request.body) updateMahasiswa.foto = request.body.foto;
+                            if('alamat' in request.body) {
+                                const newAlamat = request.body.alamat.replace(/[^0-9a-zA-Z.,\/\s]+/g, '');
+                                if (newAlamat == '') error.alamat = 'Alamat Tidak Valid! 😦';
+                                else updateMahasiswaDetail.alamat = newAlamat;
+                            }
+                            if('prodi' in request.body) {
+                                const newProdi = request.body.prodi.replace(/[^a-zA-Z\s]+/g, '');
+                                if (newProdi == '') error.prodi = 'Prodi Tidak Valid! 😦';
+                                else updateMahasiswaDetail.prodi = newProdi;
+                            }
+                            if('angkatan' in request.body) {
+                                const newAngkatan = request.body.angkatan.replace(/[^0-9]+/g, '')
+                                if (newAngkatan == '') error.angkatan = 'Angkatan Tidak Valid! 😦';
+                                else updateMahasiswaDetail.angkatan = newAngkatan;
+                            }
+                            if('tanggal_lahir' in request.body) {
+                                if (new Date(request.body.tanggal_lahir) < new Date()) {
+                                    if ((Date.now() - new Date(request.body.tanggal_lahir)) / (31557600000) < 15) {
+                                        error.tanggal_lahir = 'Minimal Umur 15++ Tahun! 🤔';
+                                    }
+                                    else updateMahasiswaDetail.tanggal_lahir = request.body.tanggal_lahir;
+                                }
+                                else error.tanggal_lahir = 'Tanggal Lahir Tidak Valid! 😦';
+                            }
+                            updateMahasiswa.updated_at = currentTime;
+                            updateMahasiswaDetail.updated_at = currentTime;
+                            if(Object.keys(error).length > 0) throw error;
+                            WriteUpdateGoogleSheetData('mahasiswa', {...updateMahasiswa});
+                            WriteUpdateGoogleSheetData('mahasiswaDetail', {...updateMahasiswaDetail});
+                            response.status(201).json({
+                                info: 'Berhasil Memperbaharui Data Mahasiswa! 😝',
+                                result: {...updateMahasiswa, ...updateMahasiswaDetail}
+                            });
+                        }
+                    }
+                    else {
+                        throw 'Harap Melakukan Login Ulang! 😯';
+                    }
+                }
+                catch (error) {
+                    response.status(401).json({
+                        info: 'Gagal Memperbaharui Data Mahasiswa Mahasiswa! 🤧 Akses Ditolak! 😷',
+                        result: error
+                    });
+                }
+                return;
+            }
+        }
+    }
+    ResponseJsonDataNotFound(response, 'Mahasiswa Univ. Multimedia Nusantara 🤔', 'Mahasiswa Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
+});
 
 /** UKM -- Unit Kegiatan Mahasiswa */
 app.get('/api/ukm/:kode', (request, response) => {
@@ -982,6 +1072,87 @@ app.post('/api/ukm', (request, response) => {
             result: error
         });
     }
+});
+app.put('/api/ukm/:kode', (request, response) => {
+    if('kode' in request.params) {
+        const parameter = request.params.kode.replace(/[^0-9a-zA-Z]+/g, '');
+        if(parameter != '') {
+            console.log(`${request.connection.remoteAddress} => /api/ukm/${parameter} => ${JSON.stringify(request.body)}`);
+            const idxUkm = database.ukm.findIndex(u => u.kode == parameter);
+            if(idxUkm >= 0) {
+                try {
+                    let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;
+                    if(token.startsWith('Bearer ')) token = token.slice(7, token.length);
+                    const decoded = jwt.verify(token, jwtSecretKey);
+                    const idx = database.users.findIndex(u => u.id == decoded.user.id);
+                    if(idx >= 0) {
+                        if (
+                            !('nama' in request.body) && !('anggota' in request.body) &&
+                            !('foto' in request.body) && !('deskripsi' in request.body) &&
+                            !('jam_mulai' in request.body) && !('jam_selesai' in request.body)
+                        ) {
+                            response.json({
+                                info: 'Tidak Ada Data Ukm Yang Dapat Diubah! 😝',
+                                message: 'Hemn .. Menarik .. 🤯'
+                            });
+                        }
+                        else {
+                            const currentTime = new Date().getTime();
+                            const updateUkm = {...database.ukm[idxUkm]};
+                            const updateUkmDetail = {...database.ukmDetail[idxUkm]};
+                            const error = {};
+                            if('nama' in request.body) {
+                                const newNama = request.body.nama.replace(/[^a-zA-Z\s]+/g, '');
+                                if (newNama == '') error.nama = 'Nama Tidak Valid! 😦';
+                                else updateUkm.nama = newNama;
+                            }
+                            if('anggota' in request.body) {
+                                const newAnggota = request.body.anggota.replace(/[^0-9]+/g, '')
+                                if (newAnggota == '') error.anggota = 'Jumlah Tidak Valid! 😦';
+                                else updateUkm.anggota = newAnggota;
+                            }
+                            if('foto' in request.body) updateUkm.foto = request.body.foto;
+                            if('deskripsi' in request.body) {
+                                const newDeskripsi = request.body.deskripsi.replace(/[^0-9a-zA-Z.,!@#$%^&*()\-+_=?`~\/\'\"\s]+/g, '');
+                                if (newDeskripsi == '') error.deskripsi = 'Deskripsi Tidak Valid! 😦';
+                                else updateUkm.deskripsi = newDeskripsi;
+                            }
+                            if('jam_mulai' in request.body) {
+                                const newJamMulai = request.body.jam_mulai.replace(/[^0-9:]+/g, '')
+                                if (newJamMulai == '') error.jam_mulai = 'Jam Mulai Tidak Valid! 😦';
+                                else updateUkmDetail.jam_mulai = newJamMulai;
+                            }
+                            if('jam_selesai' in request.body) {
+                                const newJamSelesai = request.body.jam_selesai.replace(/[^0-9:]+/g, '')
+                                if (newJamSelesai == '') error.jam_selesai = 'Jam Selesai Tidak Valid! 😦';
+                                else updateUkmDetail.jam_selesai = newJamSelesai;
+                            }
+                            updateUkm.updated_at = currentTime;
+                            updateUkmDetail.updated_at = currentTime;
+                            if(Object.keys(error).length > 0) throw error;
+                            WriteUpdateGoogleSheetData('ukm', {...updateUkm});
+                            WriteUpdateGoogleSheetData('ukmDetail', {...updateUkmDetail});
+                            response.status(201).json({
+                                info: 'Berhasil Memperbaharui Data UKM! 😝',
+                                result: {...updateUkm, ...updateUkmDetail}
+                            });
+                        }
+                    }
+                    else {
+                        throw 'Harap Melakukan Login Ulang! 😯';
+                    }
+                }
+                catch (error) {
+                    response.status(401).json({
+                        info: 'Gagal Memperbaharui Ekstrakurikuler Mahasiswa! 🤧 Akses Ditolak! 😷',
+                        result: error
+                    });
+                }
+                return;
+            }
+        }
+    }
+    ResponseJsonDataNotFound(response, 'Ekstrakurikuler Mahasiswa Univ. Multimedia Nusantara 🤔', 'Ekstrakurikuler Mahasiswa Yang Anda Cari Tidak Dapat Ditemukan~ 😏');
 });
 
 /** Perpustakaan -- Buku, Jurnal & Skripsi */

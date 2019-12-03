@@ -637,7 +637,7 @@ app.post('/api/add-favorites', (request, response) => {
         });
     }
 });
-app.delete('/api/delete-favorites', (request, response) => {
+app.put('/api/delete-favorites', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api/user/delete-favorites => ${JSON.stringify(request.body)}`);
     try {
         let token = request.headers['x-access-token'] || request.headers['authorization'] || request.body.token;

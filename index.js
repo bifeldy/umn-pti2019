@@ -219,8 +219,8 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
         }
         if(tempKey[i] == 'kode') {
             const idxFasilitas = database.fasilitas.findIndex(f => f.kode == requestBody[tempKey[i]]);
-            const idxKantin = database.kantin.findIndex(f => f.kode == requestBody[tempKey[i]]);
-            const idxUkm = database.ukm.findIndex(f => f.kode == requestBody[tempKey[i]]);
+            const idxKantin = database.kantin.findIndex(k => k.kode == requestBody[tempKey[i]]);
+            const idxUkm = database.ukm.findIndex(u => u.kode == requestBody[tempKey[i]]);
             const idxMax = Math.max(idxFasilitas, idxKantin, idxUkm);
             if(idxMax >= 0) {
                 return resp.status(400).json({
@@ -230,7 +230,7 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
             }
         }
         if(tempKey[i] == 'isbn') {
-            const idxPerpustakaan = database.perpustakaan.findIndex(f => f.isbn == requestBody[tempKey[i]]);
+            const idxPerpustakaan = database.perpustakaan.findIndex(p => p.isbn == requestBody[tempKey[i]]);
             if(idxPerpustakaan >= 0) {
                 return resp.status(400).json({
                     info: 'Gagal Menambahkan Data! 🤤',
@@ -239,11 +239,20 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
             }
         }
         if(tempKey[i] == 'nim') {
-            const idxMahasiswa = database.mahasiswa.findIndex(f => f.nim == requestBody[tempKey[i]]);
+            const idxMahasiswa = database.mahasiswa.findIndex(m => m.nim == requestBody[tempKey[i]]);
             if(idxMahasiswa >= 0) {
                 return resp.status(400).json({
                     info: 'Gagal Menambahkan Data! 🤤',
                     message: 'Data Dengan Nim Tersebut Sudah Ada! 😦'
+                });
+            }
+        }
+        if(tempKey[i] == 'email') {
+            const idxMahasiswa = database.mahasiswa.findIndex(m => m.email == requestBody[tempKey[i]]);
+            if(idxMahasiswa >= 0) {
+                return resp.status(400).json({
+                    info: 'Gagal Menambahkan Data! 🤤',
+                    message: 'Data Dengan Email Tersebut Sudah Ada! 😦'
                 });
             }
         }

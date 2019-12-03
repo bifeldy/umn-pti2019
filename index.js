@@ -230,7 +230,7 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
             }
         }
         if(tempKey[i] == 'isbn') {
-            const idxPerpustakaan = database.perpustakaan.findIndex(p => p.isbn == requestBody[tempKey[i]]);
+            const idxPerpustakaan = database.perpustakaan.findIndex(p => p.isbn == parseInt(requestBody[tempKey[i]]));
             if(idxPerpustakaan >= 0) {
                 return resp.status(400).json({
                     info: 'Gagal Menambahkan Data! 🤤',
@@ -239,7 +239,7 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
             }
         }
         if(tempKey[i] == 'nim') {
-            const idxMahasiswa = database.mahasiswa.findIndex(m => m.nim == requestBody[tempKey[i]]);
+            const idxMahasiswa = database.mahasiswa.findIndex(m => m.nim == parseInt(requestBody[tempKey[i]]));
             if(idxMahasiswa >= 0) {
                 return resp.status(400).json({
                     info: 'Gagal Menambahkan Data! 🤤',

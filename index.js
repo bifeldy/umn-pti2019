@@ -217,6 +217,36 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
                 message: 'Data Utama Tidak Lengkap! 😦'
             });
         }
+        if(tempKey[i] == 'kode') {
+            const idxFasilitas = database.fasilitas.findIndex(f => f.kode == requestBody[tempKey[i]]);
+            const idxKantin = database.kantin.findIndex(f => f.kode == requestBody[tempKey[i]]);
+            const idxUkm = database.ukm.findIndex(f => f.kode == requestBody[tempKey[i]]);
+            const idxMax = Math.max(idxFasilitas, idxKantin, idxUkm);
+            if(idxMax >= 0) {
+                return resp.status(400).json({
+                    info: 'Gagal Menambahkan Data! 🤤',
+                    message: 'Data Dengan Kode Tersebut Sudah Ada! 😦'
+                });
+            }
+        }
+        if(tempKey[i] == 'isbn') {
+            const idxPerpustakaan = database.perpustakaan.findIndex(f => f.isbn == requestBody[tempKey[i]]);
+            if(idxPerpustakaan >= 0) {
+                return resp.status(400).json({
+                    info: 'Gagal Menambahkan Data! 🤤',
+                    message: 'Data Dengan Isbn Tersebut Sudah Ada! 😦'
+                });
+            }
+        }
+        if(tempKey[i] == 'nim') {
+            const idxMahasiswa = database.mahasiswa.findIndex(f => f.nim == requestBody[tempKey[i]]);
+            if(idxMahasiswa >= 0) {
+                return resp.status(400).json({
+                    info: 'Gagal Menambahkan Data! 🤤',
+                    message: 'Data Dengan Nim Tersebut Sudah Ada! 😦'
+                });
+            }
+        }
     }
     tempKey.forEach(key => {
         newObject[key] = requestBody[key];

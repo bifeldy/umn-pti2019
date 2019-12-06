@@ -118,8 +118,8 @@ let database = {
 };
 
 /** Loading Database By Reading To GoogleSheet */
-function LoadGoogleSheetData(workSheetTabName) {
-    return gsApi.spreadsheets.values.get({
+async function LoadGoogleSheetData(workSheetTabName) {
+    return await gsApi.spreadsheets.values.get({
         spreadsheetId: appGoogleSheetId,
         range: workSheetTabName
     }).then(data => {
@@ -155,7 +155,7 @@ function LoadGoogleSheetData(workSheetTabName) {
         return tempKey;
     }).catch(err => console.log(err));
 }
-async function RefreshGoogleSheetData() {
+function RefreshGoogleSheetData() {
     googleDocsWorksheet.forEach(workSheet => {
         LoadGoogleSheetData(workSheet);
     });
@@ -170,7 +170,7 @@ async function WriteUpdateGoogleSheetData(workSheetTab, workSheetTabDataObject) 
     tempKey.forEach(key => {
         updateUser.push(workSheetTabDataObject[key]);
     });
-    gsApi.spreadsheets.values.update({
+    await gsApi.spreadsheets.values.update({
         spreadsheetId: appGoogleSheetId,
         range: `${workSheetTab}!A${parseInt(workSheetTabDataObject.id)+1}`,
         valueInputOption: 'USER_ENTERED',
@@ -179,8 +179,8 @@ async function WriteUpdateGoogleSheetData(workSheetTab, workSheetTabDataObject) 
         }
     }).then(res => {
         console.log(`Update :: ${workSheetTab}`);
-        RefreshGoogleSheetData();
     }).catch(err => console.log(err));
+    await RefreshGoogleSheetData();
 }
 async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) {
     await GenerateNewSessionToGoogleAPI();
@@ -189,7 +189,7 @@ async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) 
     tempKey.forEach(key => {
         registerUser.push(workSheetTabDataObject[key]);
     });
-    gsApi.spreadsheets.values.append({
+    await gsApi.spreadsheets.values.append({
         spreadsheetId: appGoogleSheetId,
         range: workSheetTab,
         valueInputOption: 'USER_ENTERED',
@@ -198,8 +198,8 @@ async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) 
         }
     }).then(res => {
         console.log(`Write :: ${workSheetTab}`);
-        RefreshGoogleSheetData();
     }).catch(err => console.log(err));
+    await RefreshGoogleSheetData();
 }
 async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, startColumn = 1, endColumnBefore = 2) {
     GenerateNewSessionToGoogleAPI();

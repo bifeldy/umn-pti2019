@@ -513,7 +513,7 @@ app.post('/api/register', (request, response) => {
                         alamat: newUserData.alamat,
                         tanggal_lahir: newUserData.tanggal_lahir,
                         foto: newUserData.foto,
-                        password: newUserData.password,
+                        password: newUserData.password.toLowerCase(),
                         created_at: newUserData.created_at,
                         updated_at: newUserData.updated_at
                     }
@@ -566,7 +566,7 @@ app.put('/api/update', (request, response) => {
                 const error = {};
                 if('password' in request.body) {
                     if(request.body.password.length >= 128) {
-                        updateUser.password = request.body.password;
+                        updateUser.password = request.body.password.toLowerCase();
                     }
                     else error.password = 'Harap Mengirimkan Password Yang Sudah Di Hash Dengan SHA512! 🙄';
                 }

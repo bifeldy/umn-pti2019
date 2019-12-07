@@ -202,9 +202,10 @@ async function WriteAppendGoogleSheetData(workSheetTab, workSheetTabDataObject) 
     await RefreshGoogleSheetData();
 }
 async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, startColumn = 1, endColumnBefore = 2) {
-    GenerateNewSessionToGoogleAPI();
-    const currentTime = new Date().getTime();
     let newObject = {};
+    let newObjectDetail = {};
+    const currentTime = new Date().getTime();
+    GenerateNewSessionToGoogleAPI();
     const tempKey = await LoadGoogleSheetData(object);
     for(let i=startColumn; i<tempKey.length-endColumnBefore; i++) {
         if (
@@ -264,7 +265,6 @@ async function AddNewDataToGoogleSheet(object, objectDetail, requestBody, resp, 
     newObject.created_at = currentTime;
     newObject.updated_at = currentTime;
     if(objectDetail != null) {
-        let newObjectDetail = {};
         const tempKeyDetail = await LoadGoogleSheetData(objectDetail);
         for(let i=startColumn; i<tempKeyDetail.length-endColumnBefore; i++) {
             if (

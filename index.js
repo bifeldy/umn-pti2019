@@ -966,6 +966,16 @@ app.put('/api/mahasiswa/:nim', (request, response) => {
                                 message: 'Hemn .. Menarik .. 🤯'
                             });
                         }
+                        else if (
+                            request.body.nama_lengkap == '' || request.body.telepon == '' ||
+                            request.body.foto == '' || request.body.alamat == '' ||
+                            request.body.prodi == '' || request.body.tanggal_lahir == '' || request.body.angkatan == ''
+                        ) {
+                            response.json({
+                                info: 'Gagal Mengubah Data! 😥',
+                                message: 'Data Tidak Boleh Ada Yang Dikosongkan .. 🙄'
+                            });
+                        }
                         else {
                             const currentTime = new Date().getTime();
                             const updateMahasiswa = {...database.mahasiswa[idxMahasiswa]};
@@ -1105,6 +1115,16 @@ app.put('/api/ukm/:kode', (request, response) => {
                                 message: 'Hemn .. Menarik .. 🤯'
                             });
                         }
+                        else if (
+                            request.body.nama == '' || request.body.anggota == '' ||
+                            request.body.foto == '' || request.body.deskripsi == '' ||
+                            request.body.jam_mulai == '' || request.body.jam_selesai == ''
+                        ) {
+                            response.json({
+                                info: 'Gagal Mengubah Data! 😥',
+                                message: 'Data Tidak Boleh Ada Yang Dikosongkan .. 🙄'
+                            });
+                        }
                         else {
                             const currentTime = new Date().getTime();
                             const updateUkm = {...database.ukm[idxUkm]};
@@ -1241,6 +1261,16 @@ app.put('/api/perpustakaan/:isbn', (request, response) => {
                             response.json({
                                 info: 'Tidak Ada Data Pustaka Yang Dapat Diubah! 😝',
                                 message: 'Hemn .. Menarik .. 🤯'
+                            });
+                        }
+                        else if (
+                            request.body.judul == '' || request.body.pengarang == '' || request.body.penerbit == '' ||
+                            request.body.kategori == '' || request.body.foto_sampul == '' || request.body.deskripsi == '' ||
+                            request.body.edisi == '' || request.body.binding == '' || request.body.tahun == ''
+                        ) {
+                            response.json({
+                                info: 'Gagal Mengubah Data! 😥',
+                                message: 'Data Tidak Boleh Ada Yang Dikosongkan .. 🙄'
                             });
                         }
                         else {
@@ -1383,6 +1413,15 @@ app.put('/api/fasilitas/:kode', (request, response) => {
                                 message: 'Hemn .. Menarik .. 🤯'
                             });
                         }
+                        else if (
+                            request.body.nama =='' || request.body.fakultas =='' || request.body.gambar =='' ||
+                            request.body.deskripsi =='' || request.body.jam_buka =='' || request.body.jam_tutup ==''
+                        ) {
+                            response.json({
+                                info: 'Gagal Mengubah Data! 😥',
+                                message: 'Data Tidak Boleh Ada Yang Dikosongkan .. 🙄'
+                            });
+                        }
                         else {
                             const currentTime = new Date().getTime();
                             const updateFasilitas = {...database.fasilitas[idxFasilitas]};
@@ -1519,6 +1558,16 @@ app.put('/api/kantin/:kode', (request, response) => {
                             response.json({
                                 info: 'Tidak Ada Data Kantin Yang Dapat Diubah! 😝',
                                 message: 'Hemn .. Menarik .. 🤯'
+                            });
+                        }
+                        else if (
+                            request.body.nama == '' || request.body.kategori == '' || request.body.foto == '' ||
+                            request.body.deskripsi == '' || request.body.harga == '' || request.body.cash == '' ||
+                            request.body.gopay == '' || request.body.ovo == '' || request.body.dana == ''
+                        ) {
+                            response.json({
+                                info: 'Gagal Mengubah Data! 😥',
+                                message: 'Data Tidak Boleh Ada Yang Dikosongkan .. 🙄'
                             });
                         }
                         else {

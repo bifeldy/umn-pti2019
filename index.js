@@ -2,11 +2,13 @@
 const appName = 'PTI-2019 Mini API 🤭';
 const appDescription = 'Delay Itu Bebas, Drop Itu Pilihan! 😉';
 const appVersion = 'v1.0 Official Release! 😱';
-const appDev = ['Basilius Bias Astho Christyono 😈', 'Yehezkiel Gunawan 👿'];
+const appDev = ['Basilius Bias Astho Christyono 😈 Programmer, Quality Checker', 'Yehezkiel Gunawan 👿 Tester, Quality Assurance'];
 const appDocumentation = 'https://documenter.getpostman.com/view/5658787/SW7W5pjd';
-const appRepository = 'https://api.github.com/repos/Bifeldy/umn-pti2019';
-const appRepositoryCommits = `${appRepository}/commits`;
-const appRepositoryContributors = `${appRepository}/contributors`;
+const appRepository = 'https://github.com/bifeldy/umn-pti2019';
+const appRepositoryApi = 'https://api.github.com/repos/Bifeldy/umn-pti2019';
+const appDiscussion = 'https://discord.gg/xGWdExk';
+const appRepositoryApiCommits = `${appRepositoryApi}/commits`;
+const appRepositoryApiContributors = `${appRepositoryApi}/contributors`;
 const appGoogleSheetId = '1G-VvfqwaObT-DfkiYA-_CTa7DapPpr7XFG2rGGb1HVY';
 
 /** Our Library */
@@ -312,10 +314,11 @@ function ResponseJsonDataNotFound(response, info, message) {
 }
 
 /** Home Page */
-// app.get('/', (request, response) => {
-//     console.log(`${request.connection.remoteAddress} => /`);
-//     response.sendfile('./Information.png');
-// });
+app.get('/', (request, response) => {
+    console.log(`${request.connection.remoteAddress} => /`);
+    // response.sendfile('./Information.png');
+    response.redirect(appDocumentation);
+});
 
 app.get('/api/logs', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /logs`);
@@ -327,7 +330,6 @@ app.get('/api/logs', (request, response) => {
             'Accept': 'application/vnd.heroku+json; version=3'
         },
         form: {
-            "lines": 10,
             "tail": true
         }
     },
@@ -335,7 +337,10 @@ app.get('/api/logs', (request, response) => {
         if(!err && res.statusCode == 201) {
             const loggingUrl = JSON.parse(body).logplex_url;
             console.log(`New Logging Url => ${loggingUrl}`);
-            response.redirect(loggingUrl);
+            response.json({
+                info: 'Catatan Server! 😙',
+                logUrl: `${loggingUrl.split('?')[0]}?tail=true`
+            });
         }
     });
 });
@@ -344,7 +349,7 @@ app.get('/api/logs', (request, response) => {
 app.get('/api', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /api`);
     externalRequest({
-        url: appRepositoryCommits,
+        url: appRepositoryApiCommits,
         headers: {
             'User-Agent': 'request'
         }
@@ -357,7 +362,7 @@ app.get('/api', (request, response) => {
             delete githubCommitsResponse[0].committer;
         }
         externalRequest({
-            url: appRepositoryContributors,
+            url: appRepositoryApiContributors,
             headers: {
                 'User-Agent': 'request'
             }
@@ -1613,7 +1618,17 @@ app.put('/api/kantin/:kode', (request, response) => {
 /** Error 404 - Harus Paling Bawah */
 app.get('*', (request, response) => {
     console.log(`${request.connection.remoteAddress} => /notFound`);
-    response.redirect(appDocumentation);
+    response.status(404).json({
+        info: 'Whoops Terjadi Kesalahan! 😫',
+        message: 'Error 404 - API Not Found! 💩',
+        appName,
+        appDescription,
+        appVersion,
+        appDev,
+        appDocumentation,
+        appRepository,
+        appDiscussion
+    });
 });
 
 // Host Server On Current Network

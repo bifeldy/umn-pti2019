@@ -19,6 +19,7 @@ const jwt = require('jsonwebtoken');
 const externalRequest = require('request');
 const favicon = require('serve-favicon');
 const path = require('path');
+const rateLimit = require("express-rate-limit");
 
 /** Heroku API */
 let herokuKey;
@@ -73,12 +74,19 @@ GenerateNewSessionToGoogleAPI();
 const app = express();
 const host = '0.0.0.0'; // Host On Current IP (Local & Public)
 const port = process.env.PORT || 80;
+const apiLimiter = rateLimit({
+    windowMs: 1000, // 1 Second
+    max: 1, // 1 Request
+    message: "Mohon Menunggu Sebentar, Jangan SPAM 💩"
+});
 
 /** Our App Server */
+app.set('trust proxy', 1);
 app.use(favicon(path.join(__dirname, 'favicon.ico')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
+app.use("/api/", apiLimiter);
 
 /** Our Global Variables Data */
 const jwtAlgorithm = 'HS512';
@@ -851,13 +859,14 @@ app.get('/api/mahasiswa/:nim', (request, response) => {
         const parameter = request.params.nim.replace(/[^0-9]+/g, '');
         if(parameter != '') {
             console.log(`${request.connection.remoteAddress} => /api/mahasiswa/${parameter}`);
-            const index = database.mahasiswa.findIndex(u => u.nim == parseInt(parameter));
-            if(index >= 0) {
+            const idx1 = database.mahasiswa.findIndex(u => u.nim == parseInt(parameter));
+            const idx2 = database.mahasiswaDetail.findIndex(u => u.id == parseInt(idx1));
+            if(idx1 >= 0 && idx2 >= 0) {
                 response.json({
                     info: 'Mahasiswa Univ. Multimedia Nusantara 🤔',
                     result: {
-                        ...database.mahasiswa[index],
-                        ...database.mahasiswaDetail[index]
+                        ...database.mahasiswa[idx1],
+                        ...database.mahasiswaDetail[idx2]
                     }
                 });
                 return;
